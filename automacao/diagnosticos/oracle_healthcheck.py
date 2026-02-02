@@ -62,16 +62,7 @@ class ConnectionConfig:
 # LOGGING
 # =============================================================================
 
-def setup_logging(log_file: str = "healthcheck.log") -> None:
-    """Configura logging para arquivo e console (stderr)."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stderr),
-            logging.FileHandler(log_file, encoding="utf-8")
-        ]
-    )
+# Logger configurado no main via utils.logging_config
 
 
 # =============================================================================
@@ -425,26 +416,57 @@ class OracleHealthCheck:
 # ENTRY POINT
 # =============================================================================
 
+# Setup de Path para importar módulos irmãos
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+try:
+    from automacao.utils.credentials import get_credentials
+    from automacao.utils.logging_config import setup_logging
+except ImportError:
+    # Fallback caso a estrutura de pastas não esteja padrão
+    logging.warning("Módulos utils não encontrados. Usando implementations local/insegura.")
+    
+    def setup_logging(log_file="healthcheck.log", json_mode=False):
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    def get_credentials(cli_user, cli_password, cli_dsn):
+        from collections import namedtuple
+        Creds = namedtuple('DBCredentials', ['username', 'password', 'dsn'])
+        return Creds(cli_user or 'system', cli_password or 'oracle', cli_dsn or 'localhost:1521/orcl')
+
+# =============================================================================
+# ENTRY POINT
+# =============================================================================
+
 def main() -> int:
     """Ponto de entrada principal."""
     parser = argparse.ArgumentParser(
         description="ORAEX - Oracle Health Check Automation"
     )
-    parser.add_argument("--user", default="system", help="Usuário do banco")
-    parser.add_argument("--password", default="oracle", help="Senha")
-    parser.add_argument("--dsn", default="localhost:1521/orcl", help="DSN")
+    # Removendo defaults hardcoded para forçar uso do gerenciador de credenciais
+    parser.add_argument("--user", help="Usuário do banco (Default: env ORACLE_USER)")
+    parser.add_argument("--password", help="Senha (Default: env ORACLE_PASSWORD)")
+    parser.add_argument("--dsn", help="DSN (Default: env ORACLE_DSN)")
     parser.add_argument("--log-file", default="healthcheck.log", help="Arquivo de log")
     parser.add_argument("--json", action="store_true", help="Output em formato JSON")
+    parser.add_argument("--log-format", choices=['text', 'json'], default='text', help="Formato dos logs (text ou json)")
     
     args = parser.parse_args()
-    setup_logging(args.log_file)
+    
+    # Determina se usa JSON logs (seja explícito ou implícito pelo output json)
+    use_json_logs = (args.log_format == 'json') or args.json
 
+    setup_logging(log_file=args.log_file, json_mode=use_json_logs)
 
+    # Resolução de Credenciais (Prioridade: CLI > ENV > Default)
+    creds = get_credentials(args.user, args.password, args.dsn)
 
     config = ConnectionConfig(
-        username=args.user,
-        password=args.password,
-        dsn=args.dsn
+        username=creds.username,
+        password=creds.password,
+        dsn=creds.dsn
     )
 
     checker = OracleHealthCheck(config)

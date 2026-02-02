@@ -176,23 +176,43 @@ def setup_logging() -> None:
     )
 
 
+# Setup de Path para importar módulos irmãos
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+try:
+    from automacao.utils.credentials import get_credentials
+except ImportError:
+    # Fallback
+    def get_credentials(cli_user, cli_password, cli_dsn):
+        from collections import namedtuple
+        Creds = namedtuple('DBCredentials', ['username', 'password', 'dsn'])
+        return Creds(cli_user or 'sys', cli_password or 'oracle', cli_dsn or 'localhost/orcl')
+
 def main() -> int:
     """Entry point."""
     parser = argparse.ArgumentParser(
         description="ORAEX - Partition Checker"
     )
-    parser.add_argument("--dsn", required=True, help="host:port/service")
-    parser.add_argument("--user", required=True, help="DB user")
-    parser.add_argument("--password", required=True, help="DB password")
+    parser.add_argument("--dsn", help="host:port/service (Default: env ORACLE_DSN)")
+    parser.add_argument("--user", help="DB user (Default: env ORACLE_USER)")
+    parser.add_argument("--password", help="DB password (Default: env ORACLE_PASSWORD)")
     parser.add_argument("--months-ahead", type=int, default=2, help="Meses à frente")
 
     args = parser.parse_args()
     setup_logging()
 
+    creds = get_credentials(args.user, args.password, args.dsn)
+
+    if not creds.dsn or not creds.username or not creds.password:
+         logging.error("Credenciais insuficientes. Configure ORACLE_USER/PASSWORD/DSN ou use argumentos CLI.")
+         return 1
+
     config = ConnectionConfig(
-        dsn=args.dsn,
-        user=args.user,
-        password=args.password
+        dsn=creds.dsn,
+        user=creds.username,
+        password=creds.password
     )
 
     checker = PartitionChecker(config, args.months_ahead)
