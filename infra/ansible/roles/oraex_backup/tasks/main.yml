@@ -1,0 +1,89 @@
+---
+# ==============================================================================
+# Role: oraex_backup
+# Descrição: Deploy de automação RMAN e agendamento de backups
+# ==============================================================================
+
+- name: Criar diretório de backup
+  file:
+    path: "{{ rman_backup_dest }}"
+    state: directory
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0755'
+
+- name: Copiar script de backup RMAN
+  copy:
+    src: ../../../automacao/backup/rman_backup_manager.py
+    dest: "{{ oraex_automation_dir }}/backup/"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0750'
+
+- name: Copiar script de capacidade ASM
+  copy:
+    src: ../../../automacao/monitoramento/asm_capacity_report.py
+    dest: "{{ oraex_automation_dir }}/monitoramento/"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0750'
+
+- name: Agendar backup full semanal (sábado 22h)
+  cron:
+    name: "ORAEX - RMAN Full Backup"
+    user: "{{ oracle_user }}"
+    minute: "0"
+    hour: "22"
+    weekday: "6"  # Sábado
+    job: >-
+      {{ python_executable }} {{ oraex_automation_dir }}/backup/rman_backup_manager.py 
+      --type full 
+      --oracle-home {{ oracle_home }} 
+      --oracle-sid {{ oracle_sid | default('ORCL') }}
+      --backup-dest {{ rman_backup_dest }}
+      {% if rman_catalog_enabled %}--catalog {{ rman_catalog_tns }}{% endif %}
+      >> {{ oraex_log_dir }}/rman_backup.log 2>&1
+
+- name: Agendar backup incremental diário (exceto sábado, 22h)
+  cron:
+    name: "ORAEX - RMAN Incremental Backup"
+    user: "{{ oracle_user }}"
+    minute: "0"
+    hour: "22"
+    weekday: "0-5"  # Domingo a Sexta
+    job: >-
+      {{ python_executable }} {{ oraex_automation_dir }}/backup/rman_backup_manager.py 
+      --type incremental --level 1
+      --oracle-home {{ oracle_home }} 
+      --oracle-sid {{ oracle_sid | default('ORCL') }}
+      --backup-dest {{ rman_backup_dest }}
+      {% if rman_catalog_enabled %}--catalog {{ rman_catalog_tns }}{% endif %}
+      >> {{ oraex_log_dir }}/rman_backup.log 2>&1
+
+- name: Agendar backup archivelog (a cada 2 horas)
+  cron:
+    name: "ORAEX - RMAN Archivelog Backup"
+    user: "{{ oracle_user }}"
+    minute: "0"
+    hour: "*/2"
+    job: >-
+      {{ python_executable }} {{ oraex_automation_dir }}/backup/rman_backup_manager.py 
+      --type archivelog
+      --oracle-home {{ oracle_home }} 
+      --oracle-sid {{ oracle_sid | default('ORCL') }}
+      --backup-dest {{ rman_backup_dest }}
+      >> {{ oraex_log_dir }}/rman_backup.log 2>&1
+
+- name: Agendar coleta de histórico ASM (diário)
+  cron:
+    name: "ORAEX - ASM Capacity Collect"
+    user: "{{ oracle_user }}"
+    minute: "0"
+    hour: "6"
+    job: >-
+      {{ python_executable }} {{ oraex_automation_dir }}/monitoramento/asm_capacity_report.py 
+      --collect 
+      --threshold {{ alert_threshold_asm }}
+      --history-file {{ oraex_log_dir }}/asm_history.json
+      >> {{ oraex_log_dir }}/asm_capacity.log 2>&1
+  when: "'rac_nodes' in group_names"  # Só em RAC

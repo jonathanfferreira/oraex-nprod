@@ -1,0 +1,46 @@
+---
+# ==============================================================================
+# Role: oraex_base
+# Descrição: Setup base - diretórios, dependências, usuários
+# ==============================================================================
+
+- name: Criar diretórios ORAEX
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0755'
+  loop:
+    - "{{ oraex_base_dir }}"
+    - "{{ oraex_automation_dir }}"
+    - "{{ oraex_automation_dir }}/configuracao"
+    - "{{ oraex_automation_dir }}/diagnosticos"
+    - "{{ oraex_automation_dir }}/monitoramento"
+    - "{{ oraex_automation_dir }}/sustentacao"
+    - "{{ oraex_automation_dir }}/backup"
+    - "{{ oraex_log_dir }}"
+
+- name: Verificar Python 3 instalado
+  command: "{{ python_executable }} --version"
+  register: python_version
+  changed_when: false
+  failed_when: python_version.rc != 0
+
+- name: Exibir versão do Python
+  debug:
+    msg: "Python instalado: {{ python_version.stdout }}"
+
+- name: Instalar pacotes Python necessários
+  pip:
+    name: "{{ python_packages }}"
+    executable: "{{ pip_executable }}"
+  when: python_packages | length > 0
+
+- name: Criar script de variáveis de ambiente
+  template:
+    src: oraex_env.sh.j2
+    dest: "{{ oraex_base_dir }}/oraex_env.sh"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0644'

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>ORAEX - Apresentação Executiva</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/dracula.min.css">
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+
+    <style>
+        .reveal h1,
+        .reveal h2,
+        .reveal h3 {
+            text-transform: none;
+        }
+
+        .reveal .slides section {
+            text-align: left;
+        }
+
+        .reveal .slides section.center {
+            text-align: center;
+        }
+
+        .highlight-green {
+            color: #50fa7b;
+            font-weight: bold;
+        }
+
+        .highlight-red {
+            color: #ff5555;
+            font-weight: bold;
+        }
+
+        .perfil-img {
+            border-radius: 50%;
+            border: 4px solid #bd93f9;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .shadow-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #bd93f9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- CAPA -->
+            <section class="center" data-background-gradient="linear-gradient(to bottom right, #282a36, #44475a)">
+                <h1 style="color: #bd93f9; font-size: 3.5em;">ORAEX</h1>
+                <h3>Modernização de Monitoramento Oracle</h3>
+                <p style="color: #6272a4;">De Scripts Legados para Automação DBRE Inteligente</p>
+                <small>Cliente: <strong>Getnet</strong> | Fevereiro 2026</small>
+            </section>
+
+            <!-- 1. O DESAFIO -->
+            <section>
+                <h2 style="color: #ff5555;">1. O Desafio (Antes) 🕸️</h2>
+                <div class="shadow-box">
+                    <ul>
+                        <li><strong>Legado Crítico:</strong> Scripts em Shell antigos e complexos.</li>
+                        <li><strong>Manutenção Difícil:</strong> "Espaguete code", difícil de debugar.</li>
+                        <li><strong>Baixa Visibilidade:</strong> Logs dispersos em texto (`grep`).</li>
+                        <li><strong>Risco Operacional:</strong> Execuções sem controle e falhas silenciosas.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 2. A SOLUÇÃO -->
+            <section>
+                <h2 style="color: #50fa7b;">2. A Solução ORAEX 🚀</h2>
+                <p>Transformamos scripts isolados em uma <strong>Plataforma de Automação</strong>.</p>
+                <div class="container">
+                    <div style="flex: 1;">
+                        <ul>
+                            <li>✨ <strong>Core em Python:</strong> Moderno e Modular.</li>
+                            <li>🛡️ <strong>DBRE Concept:</strong> Reliability Engineering.</li>
+                            <li>🚜 <strong>Compatibilidade Total:</strong> Roda em RHEL 6/7/8.</li>
+                            <li>📊 <strong>Observabilidade:</strong> JSON Logs & Dashboard.</li>
+                        </ul>
+                    </div>
+                    <div style="flex: 1; text-align: center;">
+                        <div style="background: #FFF; padding: 20px; border-radius: 10px;">
+                            <code style="color: #333;">$ python run_healthcheck.py --json</code>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. ARQUITETURA -->
+            <section>
+                <h2>3. Arquitetura Robusta 🏗️</h2>
+                <pre><code class="language-mermaid">
+graph LR
+    A[Cron/Systemd] --> B(Orquestrador Python)
+    B --> C{Módulos Core}
+    C -->|Diagnóstico| D[Oracle DB]
+    C -->|Limpeza| E[File System]
+    B --> F[Logs JSON]
+    F --> G[Dashboard Web]
+    F --> H[Grafana/Zabbix]
+                    </code></pre>
+                <p><small>*Modular, Resiliente e Sem necessidade de Root.</small></p>
+            </section>
+
+            <!-- 4. ENTREGÁVEIS -->
+            <section>
+                <h2>4. O Que Foi Entregue 📦</h2>
+                <table style="font-size: 0.8em; width: 100%;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #bd93f9;">
+                            <th>Componente</th>
+                            <th>Função</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>oracle_healthcheck.py</code></td>
+                            <td>Diagnóstico unificado do Banco (Locks, RMAN, TDE).</td>
+                        </tr>
+                        <tr>
+                            <td><code>asm_capacity.py</code></td>
+                            <td>Predição inteligente de estouro de disco.</td>
+                        </tr>
+                        <tr>
+                            <td><code>housekeeper.py</code></td>
+                            <td>Limpeza segura (Dry-Run) de logs/homes.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dashboard Web</strong></td>
+                            <td>Visão executiva em Dark Mode.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 5. SEGURANÇA -->
+            <section>
+                <h2 style="color: #f1fa8c;">5. Segurança & Compliance 🛡️</h2>
+                <div class="shadow-box" style="border-left-color: #f1fa8c;">
+                    <p>✅ <strong>Zero Root:</strong> Tudo roda com usuário `oracle`.</p>
+                    <p>✅ <strong>ReadOnly:</strong> Scripts de diagnóstico apenas leem.</p>
+                    <p>✅ <strong>Safe Mode:</strong> Modo de manutenção e checagem de processos.</p>
+                    <p>✅ <strong>Zero Dependency:</strong> Refatorado para Python 3.6 nativo.</p>
+                </div>
+            </section>
+
+            <!-- 6. ROADMAP -->
+            <section>
+                <h2>6. Próximos Passos 🗺️</h2>
+                <ul>
+                    <li class="fragment">🚀 Implantar piloto em Produção.</li>
+                    <li class="fragment">📡 Integrar JSONs com Zabbix Corporativo.</li>
+                    <li class="fragment">🤖 Ativar "Self-Healing" (correção automática).</li>
+                    <li class="fragment">☁️ Expansão para Exadata / OCI.</li>
+                </ul>
+            </section>
+
+            <!-- FINAL -->
+            <section class="center" data-background-gradient="linear-gradient(to top right, #44475a, #282a36)">
+                <h1 style="color: #bd93f9;">OBRIGADO! 🤝</h1>
+                <p>Obrigado pela oportunidade.</p>
+                <br>
+                <small>Desenvolvido com tecnologia <strong>Nano Banana Pro</strong> 🍌</small>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+    </script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            plugins: [RevealHighlight],
+            controls: true,
+            progress: true,
+            center: true,
+            transition: 'slide'
+        });
+    </script>
+</body>
+
+</html>

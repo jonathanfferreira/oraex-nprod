@@ -1,0 +1,363 @@
+:root {
+    /* Oraex "Tech Innovation" Palette */
+    --bg-dark: #020617;
+    /* Very deep navy, almost black */
+    --bg-card: #0f172a;
+    /* Dark slate blue for cards */
+
+    --primary: #0ea5e9;
+    /* Sky Blue / Electric Blue - The core brand color */
+    --primary-glow: rgba(14, 165, 233, 0.5);
+
+    --secondary: #3b82f6;
+    /* Royal Blue for gradients */
+
+    --accent: #22d3ee;
+    /* Cyan for high-tech details */
+
+    --success: #10b981;
+    /* Emerald Green */
+    --warning: #f59e0b;
+    /* Amber */
+    --danger: #ef4444;
+    /* Red */
+
+    --text-main: #f8fafc;
+    /* White/Off-white */
+    --text-muted: #94a3b8;
+    /* Slate grey text */
+
+    --glass: rgba(15, 23, 42, 0.7);
+    --border-light: rgba(56, 189, 248, 0.15);
+    /* Subtle blue borders */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+    color: var(--text-main);
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+/* --- Utility Classes --- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #fff, var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 30px rgba(14, 165, 233, 0.3);
+}
+
+.brand-blue {
+    color: var(--primary);
+}
+
+.glass-panel {
+    background: var(--glass);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.4s ease;
+}
+
+.glass-panel:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 20px var(--primary-glow);
+    transform: translateY(-2px);
+}
+
+/* --- Hero Section --- */
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Dynamic Grid Background for "Tech" Feel */
+.hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.hero-content {
+    text-align: center;
+    z-index: 10;
+    position: relative;
+}
+
+.hero h1 {
+    font-size: 5.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -2px;
+    line-height: 1.1;
+}
+
+.hero p {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    max-width: 700px;
+    margin: 1.5rem auto 2.5rem;
+}
+
+/* --- Buttons --- */
+.btn {
+    padding: 14px 35px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+
+.btn-primary:hover {
+    background: var(--secondary);
+    box-shadow: 0 0 25px var(--primary-glow);
+    transform: scale(1.05);
+}
+
+.btn-glass {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.btn-glass:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+}
+
+
+/* --- Grid Layouts --- */
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    margin: 4rem 0;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+/* --- Cards --- */
+.tech-card {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.tech-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.tech-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent);
+}
+
+.tech-card:hover::before {
+    transform: scaleX(1);
+}
+
+.tech-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    background: rgba(14, 165, 233, 0.1);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    color: var(--primary);
+}
+
+/* --- Terminal Simulator --- */
+.terminal {
+    background: #0a0a0a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.95rem;
+    color: var(--success);
+    border: 1px solid #333;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+
+.terminal::before {
+    content: 'ORAEX-CLI v2.0';
+    position: absolute;
+    top: -30px;
+    left: 0;
+    color: #666;
+    font-size: 0.8rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.terminal-header {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #222;
+    padding-bottom: 10px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.red {
+    background: #ff5f56;
+}
+
+.yellow {
+    background: #ffbd2e;
+}
+
+.green {
+    background: #27c93f;
+}
+
+/* --- Timeline --- */
+.timeline-item {
+    border-left: 2px solid var(--primary);
+    padding-left: 2.5rem;
+    position: relative;
+    margin-bottom: 2.5rem;
+}
+
+.timeline-item::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background: var(--bg-dark);
+    border: 3px solid var(--primary);
+    border-radius: 50%;
+    position: absolute;
+    left: -9px;
+    top: 5px;
+    box-shadow: 0 0 15px var(--primary);
+    transition: all 0.3s;
+}
+
+.timeline-item:hover::before {
+    background: var(--primary);
+    box-shadow: 0 0 25px var(--primary);
+}
+
+/* --- Floating Navigation --- */
+nav {
+    position: fixed;
+    top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+    /* Let clicks pass through around the pill */
+}
+
+.nav-pill {
+    pointer-events: auto;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(12px);
+    padding: 8px 10px;
+    border-radius: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 5px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+}
+
+.nav-link:hover {
+    color: #fff;
+}
+
+.nav-link.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 15px var(--primary-glow);
+}
+
+footer {
+    padding: 4rem 0;
+    text-align: center;
+    color: var(--text-muted);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 5rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 3.5rem;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+}

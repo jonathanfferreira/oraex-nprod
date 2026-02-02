@@ -1,0 +1,35 @@
+# ==============================================================================
+# ORAEX - Variáveis Específicas para Servidores Oracle
+# ==============================================================================
+
+# Oracle Home (ajustar conforme ambiente)
+oracle_home: /u01/app/oracle/product/19.0.0/dbhome_1
+oracle_base: /u01/app/oracle
+
+# Inventário Oracle
+oracle_inventory: /u01/app/oraInventory/ContentsXML/inventory.xml
+
+# RMAN Configuration
+rman_catalog_enabled: false  # true = usa catálogo, false = control file
+rman_catalog_tns: ""         # TNS do catálogo (se habilitado)
+rman_parallelism: 4
+rman_backup_dest: /u02/backup
+
+# Healthcheck
+healthcheck_interval_minutes: 15
+healthcheck_auto_kill_sessions: false
+
+# Partitioning Check
+partition_check_months_ahead: 2
+
+# Housekeeper
+housekeeper_dry_run: true  # Segurança: sempre começa em dry-run
+housekeeper_day: "0"       # Domingo
+housekeeper_hour: "2"      # 02:00
+
+# ASM (se RAC)
+asm_instance: "+ASM"
+asm_diskgroups:
+  - DATA
+  - FRA
+  - REDO

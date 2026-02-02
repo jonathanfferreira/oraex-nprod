@@ -1,0 +1,10 @@
+#!/bin/bash
+# ORAEX Environment Variables
+# Gerado automaticamente pelo Ansible
+
+export ORAEX_HOME={{ oraex_base_dir }}
+export ORAEX_LOG={{ oraex_log_dir }}
+export ORACLE_HOME={{ oracle_home }}
+export ORACLE_BASE={{ oracle_base }}
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH

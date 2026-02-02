@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ORAEX Automation Dashboard for Oracle Database Monitoring and Management">
+    <title>ORAEX - Automation Dashboard</title>
+    <link href="style.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="dark-theme">
+    <main class="container">
+        <header role="banner">
+            <div class="logo">
+                <h1 class="logo-text"><span class="oraex">ORAEX</span> <span class="subtitle">AUTOMATION
+                        DASHBOARD</span></h1>
+            </div>
+            <div id="system-info" class="system-info">
+                Loading...
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Health Checks -->
+            <section class="card health-card" aria-labelledby="health-heading">
+                <h3 id="health-heading">System Health</h3>
+                <div id="health-summary" class="metric-big" aria-live="polite">
+                    --
+                </div>
+                <div class="health-details">
+                    <div class="stat"><span id="health-ok">0</span> OK</div>
+                    <div class="stat warning"><span id="health-warn">0</span> Warn</div>
+                    <div class="stat critical"><span id="health-crit">0</span> Crit</div>
+                </div>
+            </section>
+
+            <!-- Capacity -->
+            <section class="card capacity-card" aria-labelledby="capacity-heading">
+                <h3 id="capacity-heading">ASM Capacity</h3>
+                <div id="capacity-list" class="list-container" role="list">
+                    Loading capacity...
+                </div>
+            </section>
+
+            <!-- Backups -->
+            <section class="card backup-card" aria-labelledby="backups-heading">
+                <h3 id="backups-heading">Recent Backups</h3>
+                <div id="backup-list" class="list-container" role="list">
+                    Loading backups...
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="app.js"></script>
+</body>
+
+</html>

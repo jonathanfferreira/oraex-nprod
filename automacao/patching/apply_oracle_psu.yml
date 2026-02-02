@@ -1,0 +1,116 @@
+---
+# CURSO RÁPIDO DE ANSIBLE
+# -----------------------
+# Ansible é uma ferramenta de automação "agentless" (não precisa instalar nada no servidor destino, só SSH).
+# Ele usa arquivos YAML (Yet Another Markup Language), que são listas de tarefas legíveis.
+
+- name: Oracle Database PSU Patch Automation (Getting 100% IaC)
+  # 'hosts': Define onde isso vai rodar. Pode ser um IP, ou um grupo 'oracle_servers' definido no inventário.
+  hosts: oracle_servers
+  
+  # 'become: yes': Significa "vire root" (sudo) para executar os comandos.
+  become: yes
+  become_user: root
+  
+  # 'vars': Variáveis para não repetir valores hardcoded. Se o caminho mudar, muda só aqui.
+  vars:
+    oracle_home: "/u01/app/oracle/product/19.0.0/dbhome_1"
+    grid_home: "/u01/app/19.0.0/grid"
+    patch_source_dir: "/u02/oracle/patches"
+    patch_id: "36582629"
+    patch_zip: "p36582629_190000_AIX64-5L.zip"
+
+  # 'tasks': A lista de coisas para fazer, passo a passo.
+  tasks:
+  
+    # TASK 1: O módulo 'assert' checa se uma condição é verdadeira.
+    # Ex: "Pare tudo se não tiver espaço em disco". Isso evita começar um patch que vai falhar no meio.
+    - name: 1. Validação de Pré-requisitos (Espaço em disco)
+      assert:
+        that:
+          # Verifica se /u02 tem mais de 5GB livres.
+          - item.mount == '/u02' and (item.size_available > 5 * 1024 * 1024 * 1024)
+      # 'loop': O Ansible repete essa tarefa para cada item encontrado em 'ansible_mounts' (discos do servidor)
+      loop: "{{ ansible_mounts }}"
+      when: item.mount == '/u02'
+      msg: "Espaço insuficiente em /u02. Necessário pelo menos 5GB."
+
+    # TASK 2: O módulo 'file' gerencia arquivos/pastas.
+    # 'state: absent' = DELETAR. Estamos limpando a sujeira antiga.
+    - name: 2. Limpeza de patches antigos
+      file:
+        path: "{{ patch_source_dir }}"
+        state: absent
+    
+    # 'state: directory' = CRIAR PASTA. 
+    # Idempotência: Se a pasta já existir e estiver certa, o Ansible não faz nada. Ele é inteligente.
+    - name: 2.1 Recriar diretório de patches limpo
+      file:
+        path: "{{ patch_source_dir }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: '0775'
+
+    # TASK 3: Módulo 'copy' joga arquivos da sua máquina para o servidor.
+    - name: 3. Download/Copy dos Binários do Patch (Simulado)
+      copy:
+        src: "/local/repo/{{ patch_zip }}" # Origem (sua máquina)
+        dest: "{{ patch_source_dir }}/{{ patch_zip }}" # Destino (servidor)
+        owner: oracle
+        group: oinstall
+
+    # TASK 4: Módulo 'unarchive' é o 'unzip' ou 'tar -xvf'.
+    - name: 4. Unzip do Patch
+      unarchive:
+        src: "{{ patch_source_dir }}/{{ patch_zip }}"
+        dest: "{{ patch_source_dir }}"
+        remote_src: yes # O arquivo já está lá no servidor remoto
+        owner: oracle
+        group: oinstall
+
+    # TASK 5: Usando 'block' para agrupar tarefas relacionadas.
+    - name: 5. Parar Services (Database & Listener)
+      block:
+        # Módulo 'command' roda qualquer comando shell, igual você digitaria no terminal.
+        - name: Stop Database (srvctl)
+          command: "{{ oracle_home }}/bin/srvctl stop database -d {{ db_name }}"
+          become_user: oracle # Vira usuário 'oracle' só para este comando
+          ignore_errors: yes # Se o banco já estiver parado, dá erro. Dizemos: "Tudo bem, segue o jogo".
+
+        - name: Stop Listener
+          command: "{{ oracle_home }}/bin/lsnrctl stop"
+          become_user: oracle
+          ignore_errors: yes
+
+    # TASK 6: O comando principal do Patching.
+    - name: 6. Aplicação do Patch (OPatchAuto)
+      # opatchauto é a ferramenta mágica da Oracle que aplica patches.
+      command: "{{ grid_home }}/OPatch/opatchauto apply {{ patch_source_dir }}/{{ patch_id }} -oh {{ oracle_home }}"
+      # 'register': Guarda a saída (texto) do comando numa variável chamada 'opatch_output' para lermos depois.
+      register: opatch_output
+
+    - name: 6.1 Exibir log do OPatch
+      debug:
+        var: opatch_output.stdout_lines
+
+    # TASK 7: Subindo tudo de volta.
+    - name: 7. Start Services
+      block:
+        - name: Start Database
+          command: "{{ oracle_home }}/bin/srvctl start database -d {{ db_name }}"
+          become_user: oracle
+
+        - name: Start Listener
+          command: "{{ oracle_home }}/bin/lsnrctl start"
+          become_user: oracle
+
+    # TASK 8: Finalização (Pós-Patch)
+    - name: 8. Executar Datapatch (Atualizar dicionário de dados)
+      command: "{{ oracle_home }}/OPatch/datapatch -verbose"
+      become_user: oracle
+      register: datapatch_output
+
+    - name: 8.1 Resultados do Datapatch
+      debug:
+        var: datapatch_output.stdout_lines

@@ -1,0 +1,20 @@
+---
+# ==============================================================================
+# Role: oraex_healthcheck
+# Descrição: Deploy de healthcheck e compliance
+# ==============================================================================
+
+- name: Copiar script de healthcheck
+  copy:
+    src: ../../../automacao/diagnosticos/oracle_healthcheck.py
+    dest: "{{ oraex_automation_dir }}/diagnosticos/"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0750'
+
+- name: Agendar healthcheck (a cada 15 minutos)
+  cron:
+    name: "ORAEX - Healthcheck"
+    user: "{{ oracle_user }}"
+    minute: "*/{{ healthcheck_interval_minutes }}"
+    job: "{{ python_executable }} {{ oraex_automation_dir }}/diagnosticos/oracle_healthcheck.py {% if healthcheck_auto_kill_sessions %}--auto-kill{% endif %} >> {{ oraex_log_dir }}/healthcheck.log 2>&1"

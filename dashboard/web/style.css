@@ -1,0 +1,165 @@
+:root {
+    --bg-color: #0d1117;
+    --card-bg: #161b22;
+    --text-primary: #c9d1d9;
+    --text-secondary: #8b949e;
+    --accent: #58a6ff;
+    --success: #238636;
+    --warning: #d29922;
+    --critical: #f85149;
+    --border: #30363d;
+}
+
+body.dark-theme {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.logo-text {
+    margin: 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.oraex {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-left: 10px;
+}
+
+.system-info {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+}
+
+h3 {
+    margin-top: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-big {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+.health-details {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+}
+
+.stat span {
+    font-weight: bold;
+}
+
+.stat.warning {
+    color: var(--warning);
+}
+
+.stat.critical {
+    color: var(--critical);
+}
+
+.list-container {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.disk-item,
+.backup-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+}
+
+.disk-item:last-child,
+.backup-item:last-child {
+    border-bottom: none;
+}
+
+.progress-bar {
+    background-color: var(--border);
+    height: 6px;
+    border-radius: 3px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: var(--success);
+}
+
+.progress-fill.high {
+    background-color: var(--warning);
+}
+
+.progress-fill.crit {
+    background-color: var(--critical);
+}
+
+.status-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.status-ok {
+    background-color: rgba(35, 134, 54, 0.2);
+    color: #3fb950;
+}
+
+.status-warn {
+    background-color: rgba(210, 153, 34, 0.2);
+    color: #e3b341;
+}
+
+.status-crit {
+    background-color: rgba(248, 81, 73, 0.2);
+    color: #ff7b72;
+}
