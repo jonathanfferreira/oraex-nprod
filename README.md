@@ -1,8 +1,32 @@
 # ORAEX - Modernização do Monitoramento Oracle (Getnet)
 
+[![CI](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml)
+
 ## 📌 Visão Geral
 
-Projeto de automação e sustentação de bancos de dados Oracle, substituindo scripts Shell legados por Python modular e aderente às práticas de **DBRE** e **Compliance** (Book DBA).
+Projeto de automação e sustentação de bancos de dados Oracle, substituindo scripts Shell legados por Python modular e aderente às práticas de **DBRE** (Database Reliability Engineering) e **Compliance** (Book DBA).
+
+**Objetivo Getnet:** Transformar toda infraestrutura em **100% Infrastructure as Code (IaC)** e Automação Inteligente.
+
+---
+
+## 📊 Status Atual (03/02/2026)
+
+### ✅ Entregas Recentes
+
+- **Oracle Database 19c (Node 2)**: Instalação bem-sucedida em modo Standalone.
+  - **Compliance**: Estrutura de diretórios `/u01` (Binários) e `/u02` (Dados) implementada.
+  - **Automação**: Scripts de deploy silencioso (`db_install.rsp`, `dbca_create.rsp`) validados.
+  - **Bypass**: Solução de contorno para instalação em Oracle Linux 8 aplicada.
+
+- **Stack de Automação Python**:
+  - `oracle_healthcheck.py`: Diagnóstico completo.
+  - `check_terms.py`: Compliance de particionamento.
+
+### 🚧 Em Andamento
+
+- Configuração de monitoramento no Node 2.
+- Planejamento de infraestrutura para RAC Real (Discos Compartilhados).
 
 ---
 
@@ -11,93 +35,66 @@ Projeto de automação e sustentação de bancos de dados Oracle, substituindo s
 ```
 nprod/
 ├── automacao/                  # 🤖 Scripts Python de Automação
-│   ├── backup/                 # Gerenciamento RMAN
-│   ├── configuracao/           # Tuning de Rede e Services
 │   ├── diagnosticos/           # Healthcheck e Compliance
-│   ├── instalacao/             # Pré-requisitos 19c
-│   ├── monitoramento/          # Particionamento, Tablespaces, ASM
-│   ├── patching/               # Aplicação de Patches
-│   ├── relatorios/             # Geração de Reports
-│   └── sustentacao/            # Housekeeper, Log Rotate, GoldenGate
+│   ├── monitoramento/          # Particionamento, Tablespaces
+│   ├── runbooks/               # 🆕 Self-Healing Automation
+│   │   ├── runner.py           # Orquestrador de runbooks
+│   │   ├── tablespace_auto_resize.py
+│   │   ├── listener_auto_restart.py
+│   │   └── archive_cleanup.py
+│   ├── utils/                  # 🆕 Utilitários centralizados
+│   │   ├── connection.py       # ConnectionConfig
+│   │   └── alerting.py         # Sistema de alertas
+│   └── sustentacao/            # Housekeeper, Log Rotate
 ├── docs/                       # 📚 Documentação
-│   ├── referencias/            # PDFs da Getnet (Book DBA, Instalação, etc.)
-│   ├── RELATORIO_ENTREGA_GETNET.md
-│   ├── APRESENTACAO_TECNICA.md
-│   └── FAQ_PERGUNTAS_DIFICEIS.md
-├── infra/                      # 🏗️ Infraestrutura
-│   ├── ansible/                # Playbooks e Roles Ansible
-│   │   ├── inventory/          # Inventários (prod, dev)
-│   │   ├── group_vars/         # Variáveis por grupo
-│   │   ├── roles/              # Roles reutilizáveis
-│   │   └── playbooks/          # Playbooks de deploy
-│   └── terraform/              # IaC (futuro)
-├── tests/                      # 🧪 Testes Automatizados
-│   ├── test_*.py               # Testes unitários
-│   └── run_all_tests.py        # Suite completa
-├── README.md                   # Este arquivo
-└── deployment_guide_and_faq.md # Guia de Deploy
+│   ├── referencias/            # Documentos Oficiais (Getnet/Oracle)
+│   ├── RELATORIO_ENTREGA_NODE2.md # 🆕 Detalhes da entrega do Node 2
+│   └── ...
+├── infra/                      # 🏗️ Infraestrutura (IaC)
+│   ├── ansible/                # Playbooks de Configuração
+│   └── terraform/              # Provisionamento
+├── scripts/                    # 🛠️ Scripts Shell Auxiliares
+│   ├── deploy_oracle_software.sh # Instalação de Binários
+│   ├── create_database.sh        # Criação de Banco (DBCA)
+│   └── verify_db.sh              # Validação de Instância
+└── Vagrantfile                 # Definição de Ambiente Local
 ```
 
 ---
 
-## 🚀 Como Começar
+## 🚀 Como Executar (Ambiente Local)
 
-### 1. Executar Testes
+### 1. Iniciar VMs
 
 ```bash
-cd tests
-python run_all_tests.py
+vagrant up oracle-rac-node1 oracle-rac-node2
 ```
 
-### 2. Deploy com Ansible
+### 2. Acessar Ambiente (Node 2)
 
 ```bash
-cd infra/ansible
-
-# Verificar sintaxe
-ansible-playbook playbooks/deploy_all.yml --syntax-check
-
-# Dry-run
-ansible-playbook playbooks/deploy_all.yml -i inventory/development.ini --check --diff
-
-# Deploy real
-ansible-playbook playbooks/deploy_all.yml -i inventory/production.ini
+vagrant ssh oracle-rac-node2
 ```
 
-### 3. Documentação para Cliente
+### 3. Verificar Banco de Dados
 
-- **[Apresentação Técnica](docs/APRESENTACAO_TECNICA.md)**: Visão executiva
-- **[Relatório de Entrega](docs/RELATORIO_ENTREGA_GETNET.md)**: Detalhes técnicos
-
----
-
-## 🛠️ Principais Módulos
-
-| Script | Função | Frequência |
-|--------|--------|------------|
-| `oracle_healthcheck.py` | Diagnóstico completo + Compliance | A cada 15 min |
-| `check_partitioning.py` | Validação preditiva de partições | Diário |
-| `check_tablespaces.py` | Monitoramento de tablespaces | A cada 1 hora |
-| `asm_capacity_report.py` | Auditoria ASM + Predição | Diário |
-| `rman_backup_manager.py` | Gerenciamento de backups RMAN | Configurável |
-| `oracle_housekeeper.py` | Limpeza segura de homes antigas | Semanal |
-| `autorestart_goldengate.py` | Self-healing GoldenGate | A cada 5 min |
+```bash
+sudo -u oracle bash /vagrant/scripts/verify_db.sh
+```
 
 ---
 
-## 📊 Status
+## 🛠️ Principais Módulos Python
 
-- **Testes**: 48 passando ✅
-- **Cobertura**: Monitoramento, Diagnóstico, Sustentação, Backup
-- **Ansible**: Estrutura completa com 5 roles
+| Script | Função | Status |
+|--------|--------|--------|
+| `oracle_healthcheck.py` | Diagnóstico completo + Compliance | ✅ Prod |
+| `check_partitioning.py` | Validação preditiva de partições | ✅ Prod |
+| `check_tablespaces.py` | Monitoramento de tablespaces | ✅ Prod |
+| `asm_capacity_report.py` | Auditoria ASM + Predição | ✅ Prod |
 
 ---
 
 ## 📖 Referências
 
-Os PDFs de documentação da Getnet estão em `docs/referencias/`:
-
-- GETNET - BOOK DBA
-- Install Oracle RAC 19c
-- Roteiro PSU
-- E mais...
+Os PDFs de documentação e relatórios detalhados estão em `docs/`.
