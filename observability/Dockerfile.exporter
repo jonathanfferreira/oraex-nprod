@@ -1,0 +1,38 @@
+# Dockerfile for Oracle Exporter
+# -------------------------------
+FROM python:3.11-slim
+
+LABEL maintainer="ORAEX Team"
+LABEL description="Prometheus Exporter for Oracle Database Metrics"
+
+WORKDIR /app
+
+# Install Oracle Instant Client dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libaio1 \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir cx_Oracle prometheus_client
+
+# Copy application code
+COPY automacao/ ./automacao/
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV ORACLE_DSN=localhost:1521/orcl
+ENV ORACLE_USER=system
+ENV ORACLE_PASSWORD=oracle
+
+# Expose metrics port
+EXPOSE 9161
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9161/health')" || exit 1
+
+# Run exporter
+CMD ["python", "-m", "automacao.observability.oracle_exporter", "--port", "9161"]

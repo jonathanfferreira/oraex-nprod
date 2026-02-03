@@ -1,0 +1,61 @@
+# AlertManager Configuration for ORAEX
+# -------------------------------------
+
+global:
+  smtp_smarthost: 'smtp.example.com:587'
+  smtp_from: 'alertmanager@oraex.local'
+  smtp_auth_username: 'alertmanager@oraex.local'
+  smtp_auth_password: 'changeme'
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+route:
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'database']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-receiver'
+      group_wait: 10s
+      repeat_interval: 1h
+    
+    # Warning alerts - grouped and less frequent
+    - match:
+        severity: warning
+      receiver: 'warning-receiver'
+      group_wait: 1m
+
+receivers:
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook'
+        send_resolved: true
+
+  - name: 'critical-receiver'
+    slack_configs:
+      - channel: '#dba-alerts-critical'
+        send_resolved: true
+        title: '🚨 {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+    # email_configs:
+    #   - to: 'dba-team@getnet.com.br'
+    #     send_resolved: true
+
+  - name: 'warning-receiver'
+    slack_configs:
+      - channel: '#dba-alerts'
+        send_resolved: true
+        title: '⚠️ {{ .CommonAnnotations.summary }}'
+        text: '{{ .CommonAnnotations.description }}'
+
+inhibit_rules:
+  # If critical is firing, suppress warning for same alertname
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'database']

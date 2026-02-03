@@ -1,0 +1,75 @@
+# ORAEX Oracle Alert Rules
+# -------------------------
+
+groups:
+  - name: oracle-alerts
+    interval: 1m
+    rules:
+      # Database Down
+      - alert: OracleDatabaseDown
+        expr: oracle_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Oracle Database {{ $labels.dsn }} is down"
+          description: "Database has been unreachable for more than 2 minutes."
+
+      # Tablespace > 85%
+      - alert: TablespaceUsageWarning
+        expr: oracle_tablespace_used_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tablespace {{ $labels.tablespace }} usage above 85%"
+          description: "Tablespace {{ $labels.tablespace }} is at {{ $value }}% usage."
+
+      # Tablespace > 95%
+      - alert: TablespaceUsageCritical
+        expr: oracle_tablespace_used_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tablespace {{ $labels.tablespace }} usage above 95%"
+          description: "Tablespace {{ $labels.tablespace }} is at {{ $value }}% - IMMEDIATE ACTION REQUIRED."
+
+      # FRA > 80%
+      - alert: FRAUsageWarning
+        expr: oracle_fra_used_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Flash Recovery Area usage above 80%"
+          description: "FRA is at {{ $value }}% - consider running archive log cleanup."
+
+      # FRA > 95%
+      - alert: FRAUsageCritical
+        expr: oracle_fra_used_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Flash Recovery Area usage above 95%"
+          description: "FRA is at {{ $value }}% - database may stop archiving."
+
+      # Many Active Sessions
+      - alert: HighSessionCount
+        expr: oracle_sessions_total > 200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of active sessions"
+          description: "{{ $value }} active sessions detected."
+
+      # Instance Restart (uptime < 5 min)
+      - alert: InstanceRestarted
+        expr: oracle_instance_uptime_minutes < 5
+        labels:
+          severity: info
+        annotations:
+          summary: "Oracle instance was recently restarted"
+          description: "Instance {{ $labels.instance }} uptime is only {{ $value }} minutes."
