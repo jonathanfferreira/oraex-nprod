@@ -15,13 +15,7 @@ from typing import List, Optional, Tuple
 
 import cx_Oracle
 
-
-class ConnectionConfig:
-    """Configuração de conexão."""
-    def __init__(self, dsn: str, user: str, password: str):
-        self.dsn = dsn
-        self.user = user
-        self.password = password
+# ConnectionConfig importado de utils.connection (centralizado)
 
 
 class PartitionInfo:
@@ -182,9 +176,19 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
+    from automacao.utils.connection import ConnectionConfig
     from automacao.utils.credentials import get_credentials
 except ImportError:
     # Fallback
+    class ConnectionConfig:
+        def __init__(self, dsn, username, password, encoding="UTF-8"):
+            self.dsn = dsn
+            self.username = username  # Note: usando username para consistencia
+            self.password = password
+        @classmethod
+        def from_cli(cls, cli_dsn=None, cli_user=None, cli_password=None):
+            return cls(cli_dsn or 'localhost/orcl', cli_user or 'sys', cli_password or 'oracle')
+    
     def get_credentials(cli_user, cli_password, cli_dsn):
         from collections import namedtuple
         Creds = namedtuple('DBCredentials', ['username', 'password', 'dsn'])

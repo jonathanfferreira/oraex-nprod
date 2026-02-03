@@ -150,10 +150,20 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
+    from automacao.utils.connection import ConnectionConfig
     from automacao.utils.credentials import get_credentials
     from automacao.utils.logging_config import setup_logging
 except ImportError:
     # Fallback
+    class ConnectionConfig:
+        def __init__(self, dsn, username, password, encoding="UTF-8"):
+            self.dsn = dsn
+            self.username = username
+            self.password = password
+        @classmethod
+        def from_cli(cls, cli_dsn=None, cli_user=None, cli_password=None):
+            return cls(cli_dsn or 'localhost/ORCL', cli_user or 'system', cli_password or 'oracle')
+
     def setup_logging(log_file=None, json_mode=False):
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 

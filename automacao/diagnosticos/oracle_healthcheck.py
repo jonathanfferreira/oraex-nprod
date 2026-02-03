@@ -49,13 +49,7 @@ class CheckResult:
         }
 
 
-class ConnectionConfig:
-    """Configuração de conexão com o banco."""
-    def __init__(self, username: str, password: str, dsn: str, encoding: str = "UTF-8"):
-        self.username = username
-        self.password = password
-        self.dsn = dsn
-        self.encoding = encoding
+# ConnectionConfig importado de utils.connection (centralizado)
 
 
 # =============================================================================
@@ -422,11 +416,23 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 try:
+    from automacao.utils.connection import ConnectionConfig
     from automacao.utils.credentials import get_credentials
     from automacao.utils.logging_config import setup_logging
 except ImportError:
     # Fallback caso a estrutura de pastas não esteja padrão
     logging.warning("Módulos utils não encontrados. Usando implementations local/insegura.")
+    
+    # Fallback ConnectionConfig local
+    class ConnectionConfig:
+        def __init__(self, dsn, username, password, encoding="UTF-8"):
+            self.dsn = dsn
+            self.username = username
+            self.password = password
+            self.encoding = encoding
+        @classmethod
+        def from_cli(cls, cli_dsn=None, cli_user=None, cli_password=None):
+            return cls(cli_dsn or 'localhost:1521/orcl', cli_user or 'system', cli_password or 'oracle')
     
     def setup_logging(log_file="healthcheck.log", json_mode=False):
         logging.basicConfig(level=logging.INFO, format="%(message)s")
