@@ -9,6 +9,135 @@
         href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Additional styles for new sections */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+            border-left: 2px solid var(--border-light);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-left: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -36px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid var(--bg);
+        }
+
+        .timeline-item.completed::before {
+            background: var(--success);
+        }
+
+        .timeline-item.in-progress::before {
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .module-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 40px rgba(14, 165, 233, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .badge-info {
+            background: rgba(14, 165, 233, 0.2);
+            color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .module-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -16,9 +145,11 @@
     <nav>
         <div class="nav-pill">
             <a href="#home" class="nav-link active">Home</a>
-            <a href="#engineering" class="nav-link">Technology</a>
-            <a href="#tests" class="nav-link">Reliability</a>
-            <a href="#roadmap" class="nav-link">Future</a>
+            <a href="#stats" class="nav-link">Números</a>
+            <a href="#modules" class="nav-link">Módulos</a>
+            <a href="#self-healing" class="nav-link">Self-Healing</a>
+            <a href="#progress" class="nav-link">Progresso</a>
+            <a href="#roadmap" class="nav-link">Roadmap</a>
         </div>
     </nav>
 
@@ -27,348 +158,345 @@
         <div class="hero-content">
             <div
                 style="font-size: 0.9rem; color: var(--primary); font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 3px; display: inline-block; border: 1px solid var(--border-light); padding: 5px 20px; border-radius: 50px; background: rgba(14, 165, 233, 0.1);">
-                Cloud & Database Intelligence
+                Automação DBA Enterprise
             </div>
 
-            <!-- Logo Replacement -->
             <div style="margin-bottom: 2rem;">
                 <img src="assets/oraex_logo.png" alt="ORAEX"
                     style="max-width: 320px; filter: drop-shadow(0 0 25px rgba(14, 165, 233, 0.3));">
             </div>
 
-            <p>
-                Modernização completa da infraestrutura de dados. <br>
-                <span class="brand-blue">Python 3.6+ Native</span> &bull; <span class="brand-blue">No Root</span> &bull;
-                <span class="brand-blue">DBRE Compliant</span>
+            <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">
+                Robôs que Salvam sua <span class="brand-blue">Madrugada</span>
+            </h1>
+
+            <p style="max-width: 600px; margin: 0 auto;">
+                Infraestrutura automatizada do zero. Vagrant, Ansible, Oracle 19c,
+                Prometheus, Grafana e Runbooks Self-Healing - tudo integrado.
             </p>
 
             <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 3rem;">
-                <a href="#engineering" class="btn btn-primary">Explorar Solução</a>
-                <a href="#tests" class="btn btn-glass">Ver Validações</a>
+                <a href="#modules" class="btn btn-primary">Ver Módulos</a>
+                <a href="#self-healing" class="btn btn-glass">Auto-Remediação</a>
             </div>
         </div>
     </header>
 
     <main class="container">
 
-        <!-- SECTION 1: THE TRANSFORMATION -->
-        <section id="engineering" class="animate-entrance" style="margin-bottom: 8rem;">
-            <h2 style="font-size: 2.5rem; margin-bottom: 3rem; text-align: center;">Transformação Técnica</h2>
-
-            <div class="grid-2">
-                <div class="glass-panel" style="border-left: 4px solid var(--danger);">
-                    <h3
-                        style="color: var(--danger); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
-                        <span>⚠️</span> Legacy Infrastructure
-                    </h3>
-                    <ul style="list-style: none; color: var(--text-muted);">
-                        <li style="margin-bottom: 20px; padding-left: 15px; position: relative;">
-                            &bull; Scripts Shell complexos e de difícil manutenção.
-                        </li>
-                        <li style="margin-bottom: 20px; padding-left: 15px; position: relative;">
-                            &bull; Logs não estruturados (texto puro).
-                        </li>
-                        <li style="margin-bottom: 20px; padding-left: 15px; position: relative;">
-                            &bull; Baixa observabilidade e reatividade.
-                        </li>
-                    </ul>
+        <!-- STATS SECTION -->
+        <section id="stats" class="animate-entrance" style="margin-bottom: 6rem;">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">7+</div>
+                    <div class="stat-label">Playbooks Ansible</div>
                 </div>
-
-                <div class="glass-panel" style="border-left: 4px solid var(--primary);">
-                    <h3
-                        style="color: var(--primary); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
-                        <span>�</span> ORAEX Modernization
-                    </h3>
-                    <ul style="list-style: none; color: var(--text-muted);">
-                        <li style="margin-bottom: 20px; padding-left: 15px; position: relative;">
-                            <strong style="color: #fff;">Python Native Core:</strong> Refatorado para Python 3.6+ (RHEL
-                            7/8 Compatible).
-                        </li>
-                        <li style="margin-bottom: 20px; padding-left: 15px; position: relative;">
-                            <strong style="color: #fff;">Data-Driven:</strong> Saída JSON nativa para integração com
-                            Zabbix/Grafana.
-                        </li>
-                        <li style="margin-bottom: 20px; padding-left: 15px; position: relative;">
-                            <strong style="color: #fff;">Resiliência:</strong> Mocking automático e tratamento de falhas
-                            de conexão.
-                        </li>
-                    </ul>
+                <div class="stat-card">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Módulos de Automação</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Runbooks Self-Healing</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Book DBA Compliant</div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 2: THE CORE -->
-        <section class="animate-entrance" style="margin-bottom: 8rem;">
-            <h2
-                style="font-size: 2.5rem; margin-bottom: 3rem; text-align: left; border-left: 5px solid var(--primary); padding-left: 20px;">
-                Intelligent Modules
+        <!-- MODULES SECTION -->
+        <section id="modules" class="animate-entrance" style="margin-bottom: 6rem;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem; text-align: center;">
+                🏗️ Arquitetura Completa
             </h2>
-            <div class="grid-3">
-                <div class="tech-card">
-                    <div class="tech-icon">🩺</div>
-                    <h3>Unified Healthcheck</h3>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 15px;">
-                        Auditoria de TDE Wallets, Locks e Parâmetros. Conformidade total com o Book DBA Getnet.
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 3rem;">
+                Cada peça foi construída pensando na realidade do ambiente Getnet.
+            </p>
+
+            <div class="module-grid">
+                <!-- IaC -->
+                <div class="module-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">🖥️</span>
+                        <span class="badge badge-success">Pronto</span>
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">Vagrant + VirtualBox</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        VMs Oracle Linux 8 criadas com <code>vagrant up</code>. Rede, shared folders e recursos
+                        configurados.
                     </p>
                 </div>
-                <div class="tech-card">
-                    <div class="tech-icon">�</div>
-                    <h3>ASM Predictor</h3>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 15px;">
-                        Algoritmo de predição de capacidade. Sabe quando o disco vai estourar antes de acontecer.
+
+                <!-- Ansible -->
+                <div class="module-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">⚙️</span>
+                        <span class="badge badge-success">7 Playbooks</span>
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">Ansible Automation</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        Orquestração completa: OS Hardening, Oracle Install, Grid Setup e RAC provisioning.
                     </p>
                 </div>
-                <div class="tech-card">
-                    <div class="tech-icon">🛡️</div>
-                    <h3>Safe Housekeeper</h3>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 15px;">
-                        Limpeza automatizada com validação de processos ativos e modo <span
-                            style="color: var(--accent)">Dry-Run</span> obrigatório.
+
+                <!-- Terraform -->
+                <div class="module-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">☁️</span>
+                        <span class="badge badge-info">Preparado</span>
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">Terraform Cloud</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        Templates prontos para deploy em OCI/AWS. Infraestrutura versionada.
+                    </p>
+                </div>
+
+                <!-- Healthcheck -->
+                <div class="module-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">🩺</span>
+                        <span class="badge badge-success">Pronto</span>
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">Oracle Healthcheck</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        TDE Wallet, SPFile, Locks, parâmetros obrigatórios. Conformidade total com Book DBA.
+                    </p>
+                </div>
+
+                <!-- Observability -->
+                <div class="module-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">📊</span>
+                        <span class="badge badge-success">Pronto</span>
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">Prometheus + Grafana</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        Exporter customizado. Métricas: tablespace, ASM, wait events. Dashboards visuais.
+                    </p>
+                </div>
+
+                <!-- MongoDB -->
+                <div class="module-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <span style="font-size: 2rem;">🍃</span>
+                        <span class="badge badge-success">Bônus</span>
+                    </div>
+                    <h3 style="color: #fff; margin-bottom: 0.5rem;">MongoDB Automation</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        Healthcheck, replica sets, conformidade Getnet. Scripts de diagnóstico.
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION: SELF-HEALING AUTOMATOR (NEW!) -->
-        <section class="animate-entrance"
-            style="margin-bottom: 8rem; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%); border-radius: 20px; padding: 3rem;">
+        <!-- SELF-HEALING SECTION -->
+        <section id="self-healing" class="animate-entrance"
+            style="margin-bottom: 6rem; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(14, 165, 233, 0.05) 100%); border-radius: 20px; padding: 3rem;">
             <h2 style="font-size: 2.5rem; margin-bottom: 1rem; text-align: center;">
                 🤖 Self-Healing Automator
             </h2>
             <p
                 style="text-align: center; color: var(--text-muted); margin-bottom: 3rem; max-width: 700px; margin-left: auto; margin-right: auto;">
-                Robôs autônomos que detectam e corrigem problemas antes de virarem incidentes. <strong
-                    style="color: var(--success);">Zero intervenção humana</strong> para chamados de N1.
+                Robôs autônomos que detectam e corrigem problemas <strong style="color: var(--success);">antes de
+                    virarem chamados N1</strong>.
             </p>
 
-            <div class="grid-3">
-                <div class="glass-panel" style="border-top: 4px solid var(--success); text-align: center;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔌</div>
-                    <h3 style="color: var(--success);">Listener Auto-Restart</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 15px;">
+            <div class="module-grid">
+                <div class="module-card" style="border-top: 4px solid var(--success);">
+                    <div style="font-size: 2.5rem; text-align: center; margin-bottom: 1rem;">🔌</div>
+                    <h3 style="color: var(--success); text-align: center;">Listener Auto-Restart</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin: 1rem 0;">
                         Detecta queda de conexão e reinicia o Listener via SSH em <strong style="color: #fff;">&lt;30
                             segundos</strong>.
                     </p>
-                    <span
-                        style="display: inline-block; margin-top: 15px; padding: 5px 15px; background: rgba(16, 185, 129, 0.2); border-radius: 20px; font-size: 0.8rem; color: var(--success);">✅
-                        TESTADO</span>
+                    <div style="text-align: center;">
+                        <span class="badge badge-success">✅ TESTADO</span>
+                    </div>
                 </div>
 
-                <div class="glass-panel" style="border-top: 4px solid var(--primary); text-align: center;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">💾</div>
-                    <h3 style="color: var(--primary);">Tablespace Auto-Expand</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 15px;">
-                        Monitoramento contínuo de espaço. Expande automaticamente com <strong
-                            style="color: #fff;">Guardrails de segurança</strong>.
+                <div class="module-card" style="border-top: 4px solid var(--primary);">
+                    <div style="font-size: 2.5rem; text-align: center; margin-bottom: 1rem;">💾</div>
+                    <h3 style="color: var(--primary); text-align: center;">Tablespace Auto-Expand</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin: 1rem 0;">
+                        Monitoramento contínuo. Expande com <strong style="color: #fff;">Guardrails</strong>: limite
+                        2x/dia, escalação >98%.
                     </p>
-                    <span
-                        style="display: inline-block; margin-top: 15px; padding: 5px 15px; background: rgba(14, 165, 233, 0.2); border-radius: 20px; font-size: 0.8rem; color: var(--primary);">✅
-                        TESTADO</span>
+                    <div style="text-align: center;">
+                        <span class="badge badge-success">✅ TESTADO</span>
+                    </div>
                 </div>
 
-                <div class="glass-panel" style="border-top: 4px solid var(--warning); text-align: center;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🧹</div>
-                    <h3 style="color: var(--warning);">Archive Log Cleanup</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 15px;">
+                <div class="module-card" style="border-top: 4px solid var(--warning);">
+                    <div style="font-size: 2.5rem; text-align: center; margin-bottom: 1rem;">🧹</div>
+                    <h3 style="color: var(--warning); text-align: center;">Archive Log Cleanup</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin: 1rem 0;">
                         Limpeza de FRA via RMAN remoto. Execução híbrida <strong style="color: #fff;">DB + SSH</strong>.
                     </p>
-                    <span
-                        style="display: inline-block; margin-top: 15px; padding: 5px 15px; background: rgba(245, 158, 11, 0.2); border-radius: 20px; font-size: 0.8rem; color: var(--warning);">✅
-                        TESTADO</span>
+                    <div style="text-align: center;">
+                        <span class="badge badge-success">✅ TESTADO</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guardrails -->
+            <div style="margin-top: 3rem; max-width: 800px; margin-left: auto; margin-right: auto;">
+                <h4 style="color: #fff; margin-bottom: 1rem; text-align: center;">🛡️ Guardrails de Segurança</h4>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <strong style="color: var(--warning);">2x/dia</strong>
+                        <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Limite por tablespace</p>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <strong style="color: var(--danger);">>98%</strong>
+                        <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Escala para DBA</p>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <strong style="color: var(--primary);">SYSTEM/UNDO</strong>
+                        <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Bloqueado para auto</p>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION: PROGRESS LOG (NEW!) -->
-        <section class="animate-entrance" style="margin-bottom: 8rem;">
+        <!-- TECH STACK -->
+        <section class="animate-entrance" style="margin-bottom: 6rem;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem; text-align: center;">🛠️ Stack Tecnológica</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 3rem;">
+                Escolhida por <strong style="color: #fff;">compatibilidade com o ambiente Getnet</strong>.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem;">
+                <div class="module-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2rem;">🐍</div>
+                    <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0.5rem;">Python 3.6+</h4>
+                </div>
+                <div class="module-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2rem;">📦</div>
+                    <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0.5rem;">Vagrant</h4>
+                </div>
+                <div class="module-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2rem;">⚙️</div>
+                    <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0.5rem;">Ansible</h4>
+                </div>
+                <div class="module-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2rem;">🔥</div>
+                    <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0.5rem;">Prometheus</h4>
+                </div>
+                <div class="module-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2rem;">📊</div>
+                    <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0.5rem;">Grafana</h4>
+                </div>
+                <div class="module-card" style="padding: 1.5rem; text-align: center;">
+                    <div style="font-size: 2rem;">🔐</div>
+                    <h4 style="color: #fff; font-size: 0.9rem; margin-top: 0.5rem;">SSH/RMAN</h4>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROGRESS LOG -->
+        <section id="progress" class="animate-entrance" style="margin-bottom: 6rem;">
             <h2 style="font-size: 2.5rem; margin-bottom: 3rem; text-align: center;">📊 Log de Progresso</h2>
 
             <div style="max-width: 800px; margin: 0 auto;">
-                <!-- Week 1 -->
-                <div class="glass-panel" style="margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
+                <!-- Phase 1 -->
+                <div class="module-card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h4 style="color: var(--success); margin: 0;">Semana 03/02 - 07/02</h4>
-                        <span
-                            style="background: var(--success); color: #000; padding: 3px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold;">CONCLUÍDO</span>
+                        <h4 style="color: var(--success); margin: 0;">Fase 1: IaC Foundation</h4>
+                        <span class="badge badge-success">100%</span>
                     </div>
-                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem;">
-                        <li style="margin-bottom: 8px;">✅ Infraestrutura de Observabilidade (Prometheus + Grafana)</li>
-                        <li style="margin-bottom: 8px;">✅ Self-Healing: Listener Auto-Restart com SSH</li>
-                        <li style="margin-bottom: 8px;">✅ Self-Healing: Tablespace Auto-Expand com Guardrails</li>
-                        <li style="margin-bottom: 8px;">✅ Self-Healing: Archive Log Cleanup via RMAN</li>
-                        <li style="margin-bottom: 8px;">✅ Integração Webhook para Alertmanager</li>
+                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 8px;">✅ Vagrantfile para Oracle Linux 8</li>
+                        <li style="margin-bottom: 8px;">✅ Ansible playbooks (7 arquivos principais)</li>
+                        <li style="margin-bottom: 8px;">✅ Oracle 19c installation automation</li>
+                        <li style="margin-bottom: 8px;">✅ Grid Infrastructure setup</li>
+                    </ul>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="module-card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="color: var(--success); margin: 0;">Fase 2: Observabilidade</h4>
+                        <span class="badge badge-success">100%</span>
+                    </div>
+                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 8px;">✅ Prometheus Oracle Exporter</li>
+                        <li style="margin-bottom: 8px;">✅ Grafana dashboards</li>
+                        <li style="margin-bottom: 8px;">✅ Alertmanager configuration</li>
+                    </ul>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="module-card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h4 style="color: var(--success); margin: 0;">Fase 3: Self-Healing</h4>
+                        <span class="badge badge-success">100%</span>
+                    </div>
+                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 8px;">✅ Listener Auto-Restart runbook</li>
+                        <li style="margin-bottom: 8px;">✅ Tablespace Auto-Expand runbook</li>
+                        <li style="margin-bottom: 8px;">✅ Archive Log Cleanup runbook</li>
+                        <li style="margin-bottom: 8px;">✅ Webhook receiver (Flask)</li>
                     </ul>
                 </div>
 
                 <!-- Challenges -->
-                <div class="glass-panel" style="margin-bottom: 1.5rem; border-left: 4px solid var(--danger);">
-                    <h4 style="color: var(--danger); margin-bottom: 1rem;">⚠️ Desafios Enfrentados</h4>
-                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem;">
-                        <li style="margin-bottom: 8px;">🔧 <strong>SSH via Windows:</strong> Heredocs não funcionavam.
-                            Solução: piped commands.</li>
-                        <li style="margin-bottom: 8px;">🔧 <strong>cx_Oracle DPI-1047:</strong> PATH do Instant Client
-                            não propagava. Solução: hardcode no bootstrap.</li>
-                        <li style="margin-bottom: 8px;">🔧 <strong>Encoding no Console:</strong> Emojis quebravam logs.
-                            Solução: text fallback.</li>
-                    </ul>
-                </div>
-
-                <!-- Next Steps -->
-                <div class="glass-panel" style="border-left: 4px solid var(--primary);">
-                    <h4 style="color: var(--primary); margin-bottom: 1rem;">🚀 Próximos Passos</h4>
-                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem;">
-                        <li style="margin-bottom: 8px;">🔜 Empacotamento PyInstaller (executável único)</li>
-                        <li style="margin-bottom: 8px;">🔜 Dockerfile para deploy containerizado</li>
-                        <li style="margin-bottom: 8px;">🔜 Dashboard Grafana com painéis de Self-Healing</li>
-                        <li style="margin-bottom: 8px;">🔜 Runbook: Sessões Zumbis (Kill automático)</li>
+                <div class="module-card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--danger);">
+                    <h4 style="color: var(--danger); margin-bottom: 1rem;">⚠️ Desafios Resolvidos</h4>
+                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 8px;">🔧 <strong>SSH via Windows:</strong> Heredocs → Piped commands
+                        </li>
+                        <li style="margin-bottom: 8px;">🔧 <strong>cx_Oracle DPI-1047:</strong> PATH bootstrap</li>
+                        <li style="margin-bottom: 8px;">🔧 <strong>Python 3.6 (RHEL 7):</strong> Dataclasses removal
+                        </li>
+                        <li style="margin-bottom: 8px;">🔧 <strong>Encoding console:</strong> Emoji → Text fallback</li>
                     </ul>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION: TECH STACK (NEW!) -->
-        <section class="animate-entrance" style="margin-bottom: 8rem;">
-            <h2 style="font-size: 2.5rem; margin-bottom: 1rem; text-align: center;">🛠️ Stack Tecnológica</h2>
-            <p style="text-align: center; color: var(--text-muted); margin-bottom: 3rem;">
-                Tecnologias escolhidas por <strong style="color: #fff;">compatibilidade com o ambiente Getnet</strong> e
-                baixo custo de adoção.
-            </p>
+        <!-- ROADMAP -->
+        <section id="roadmap" class="animate-entrance" style="padding: 4rem 0; text-align: center;">
+            <div class="module-card" style="display: inline-block; max-width: 900px; padding: 3rem;">
+                <h2 style="margin-bottom: 1rem; font-size: 2rem;">🚀 Próximos Passos</h2>
 
-            <div class="grid-4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
-                <div class="glass-panel" style="text-align: center; padding: 2rem 1.5rem;">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🐍</div>
-                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Python 3.6+</h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">RHEL 7/8 Nativo<br>Sem instalação extra</p>
-                </div>
-
-                <div class="glass-panel" style="text-align: center; padding: 2rem 1.5rem;">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔥</div>
-                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Prometheus</h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Métricas Time-Series<br>Alertmanager</p>
-                </div>
-
-                <div class="glass-panel" style="text-align: center; padding: 2rem 1.5rem;">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📊</div>
-                    <h4 style="color: #fff; margin-bottom: 0.5rem;">Grafana</h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Dashboards Visuais<br>Open Source</p>
-                </div>
-
-                <div class="glass-panel" style="text-align: center; padding: 2rem 1.5rem;">
-                    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
-                    <h4 style="color: #fff; margin-bottom: 0.5rem;">SSH + RMAN</h4>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Ferramentas já instaladas<br>Oracle Native
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <!-- SECTION 2.5: ECOSYSTEM & OBSERVABILITY -->
-        <section class="animate-entrance" style="margin-bottom: 8rem;">
-            <h2
-                style="font-size: 2.5rem; margin-bottom: 3rem; text-align: right; border-right: 5px solid var(--accent); padding-right: 20px;">
-                Complete Ecosystem
-            </h2>
-            <div class="grid-2">
-                <div class="glass-panel" style="border-top: 4px solid var(--warning);">
-                    <h3 style="color: var(--warning); margin-bottom: 1.5rem;">🔥 Prometheus Exporter</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 15px;">
-                        Métricas em tempo real. O script <code>prometheus_exporter.py</code> expõe endpoints nativos
-                        para:
-                    </p>
-                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem;">
-                        <li>&bull; <span style="color: #fff;">oracle_tablespace_usage</span> (Gauge)</li>
-                        <li>&bull; <span style="color: #fff;">oracle_asm_disk_growth</span> (Histogram)</li>
-                        <li>&bull; <span style="color: #fff;">oracle_wait_events_total</span> (Counter)</li>
-                    </ul>
-                </div>
-
-                <div class="glass-panel" style="border-top: 4px solid var(--secondary);">
-                    <h3 style="color: var(--secondary); margin-bottom: 1.5rem;">⚙️ Ansible Automation</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 15px;">
-                        Infraestrutura como Código (IaC). Playbooks idempotentes para:
-                    </p>
-                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem;">
-                        <li>&bull; Instalação de Agentes e Dependências (Offline)</li>
-                        <li>&bull; Hardening de Segurança (Permissões de Diretório)</li>
-                        <li>&bull; Orquestração de Updates em Cluster</li>
-                    </ul>
-                </div>
-
-                <div class="glass-panel" style="border-top: 4px solid var(--success);">
-                    <h3 style="color: var(--success); margin-bottom: 1.5rem;">🛡️ Security Compliance</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 15px;">
-                        Auditoria contínua baseada no <strong>Book DBA Getnet</strong>:
-                    </p>
-                    <ul style="list-style: none; color: var(--text-muted); font-size: 0.9rem;">
-                        <li>&bull; Verificação de Criptografia <strong>TDE Wallet</strong></li>
-                        <li>&bull; Validação de Parâmetros SPFile (Force Logging, Recyclebin)</li>
-                        <li>&bull; Detecção de Sessões Zumbis/Inativas</li>
-                    </ul>
-                </div>
-
-                <div class="glass-panel"
-                    style="background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                    <div style="font-size: 4rem; margin-bottom: 1rem;">🚀</div>
-                    <h4 style="color: #fff;">API-First Design</h4>
-                    <p style="text-align: center; font-size: 0.9rem; color: var(--text-muted);">Tudo conectado via
-                        <strong>FastAPI Backend</strong>
-                    </p>
-                </div>
-            </div>
-        </section>
-        <section id="tests" class="animate-entrance" style="margin-bottom: 8rem;">
-            <div class="grid-2" style="align-items: center;">
-                <div>
-                    <h2 style="font-size: 2.5rem; margin-bottom: 2rem;">Validação Rigorosa</h2>
-                    <div class="timeline-item">
-                        <h4 style="color: #fff;">Compatibilidade Retroativa</h4>
-                        <p style="color: var(--text-muted); margin-top: 5px;">Garantia de execução em <strong>RHEL
-                                6/7</strong> (Python 3.6.8). Remoção cirúrgica de dependências modernas (dataclasses).
+                <div
+                    style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; text-align: left; margin-top: 2rem;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
+                        <span class="badge badge-warning">Em Breve</span>
+                        <h4 style="color: #fff; margin: 1rem 0 0.5rem;">PyInstaller</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Executável único sem
+                            dependências Python.</p>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
+                        <span class="badge badge-warning">Em Breve</span>
+                        <h4 style="color: #fff; margin: 1rem 0 0.5rem;">Docker Container</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Deploy isolado e portável.
                         </p>
                     </div>
-                    <div class="timeline-item">
-                        <h4 style="color: #fff;">Chaos Engineering</h4>
-                        <p style="color: var(--text-muted); margin-top: 5px;">Teste de queda do Listener Oracle. O
-                            sistema degrada graciosamente e alerta via JSON.</p>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
+                        <span class="badge badge-info">Planejado</span>
+                        <h4 style="color: #fff; margin: 1rem 0 0.5rem;">Grafana Self-Healing</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Dashboards específicos de
+                            remediação.</p>
                     </div>
-                    <div class="timeline-item">
-                        <h4 style="color: #fff;">Integração Contínua</h4>
-                        <p style="color: var(--text-muted); margin-top: 5px;">Script <code>run_dashboard_data.py</code>
-                            atua como cola (Glue), consolidando métricas de todos os módulos.</p>
-                    </div>
-                </div>
-
-                <div id="terminal-section" class="terminal" style="min-height: 300px;">
-                    <div class="terminal-header">
-                        <div class="dot red"></div>
-                        <div class="dot yellow"></div>
-                        <div class="dot green"></div>
-                        <span style="margin-left: 10px; color: #555;">oracle@db-prod-01:~</span>
-                    </div>
-                    <div id="terminal-output">
-                        <!-- JS fills this -->
+                    <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 12px;">
+                        <span class="badge badge-info">Planejado</span>
+                        <h4 style="color: #fff; margin: 1rem 0 0.5rem;">Zombie Sessions Killer</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Kill automático de sessões
+                            inativas.</p>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- SECTION 4: DEPLOYMENT -->
-        <section id="roadmap" class="animate-entrance" style="padding: 6rem 0; text-align: center;">
-            <div class="glass-panel" style="display: inline-block; max-width: 900px; padding: 4rem;">
-                <h2 style="margin-bottom: 1rem; font-size: 2.5rem;">Pronto para o Futuro</h2>
-                <p style="margin-bottom: 3rem; color: var(--text-muted); font-size: 1.1rem;">
-                    O pacote de deploy já incorpora todas as melhores práticas de DBRE e Segurança da Informação.
-                </p>
-
-                <a href="../dist/oraex_deploy_getnet_20260202_0257.zip" class="btn btn-primary"
-                    style="padding: 18px 40px; font-size: 1.1rem;">
-                    Download Release Candidate v1.0 📦
-                </a>
-
-                <p style="margin-top: 2rem; font-size: 0.9rem; color: #666;">
-                    MD5 Verified &bull; Python 3.6 Compatible &bull; No Internet Required
-                </p>
             </div>
         </section>
 
@@ -378,12 +506,12 @@
         <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
             <div style="text-align: left;">
                 <h3 style="color: var(--primary);">ORAEX</h3>
-                <small style="color: #666;">Cloud Consulting & Automation</small>
+                <small style="color: #666;">Cloud & Database Automation</small>
             </div>
 
             <div style="text-align: right; color: var(--text-muted);">
-                <p>&copy; 2026 Developed for <strong>Getnet</strong></p>
-                <small>Powered by Antigravity Agents</small>
+                <p>&copy; 2026 Desenvolvido para <strong>Getnet</strong></p>
+                <small>Última atualização: 04/02/2026</small>
             </div>
         </div>
     </footer>
