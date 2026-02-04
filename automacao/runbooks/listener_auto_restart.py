@@ -42,7 +42,9 @@ class ListenerAutoRestart(BaseRunbook):
         listener_name: str = "LISTENER",
         dry_run: bool = False,
         ssh_host: Optional[str] = None,
-        ssh_user: str = "oracle"
+        ssh_user: str = "oracle",
+        ssh_port: int = 22,
+        ssh_key_path: Optional[str] = None
     ):
         super().__init__(name="ListenerAutoRestart")
         self.oracle_home = oracle_home
@@ -50,12 +52,29 @@ class ListenerAutoRestart(BaseRunbook):
         self.dry_run = dry_run
         self.ssh_host = ssh_host
         self.ssh_user = ssh_user
+        self.ssh_port = ssh_port
+        self.ssh_key_path = ssh_key_path
         self.listener_was_down = False
     
     def _run_command(self, cmd: str) -> tuple:
         """Executa comando local ou via SSH."""
         if self.ssh_host:
-            full_cmd = f"ssh {self.ssh_user}@{self.ssh_host} '{cmd}'"
+            # Opções SSH
+            opts = [
+                "-o StrictHostKeyChecking=no",
+                "-o BatchMode=yes",
+                f"-p {self.ssh_port}"
+            ]
+            
+            if self.ssh_key_path:
+                # Windows requer aspas duplas para caminhos com espaços no CMD
+                # e lida melhor com double quotes em geral
+                opts.append(f"-i \"{self.ssh_key_path}\"")
+            
+            ssh_opts = " ".join(opts)
+            
+            # Usar aspas duplas também para o comando remoto no Windows
+            full_cmd = f"ssh {ssh_opts} {self.ssh_user}@{self.ssh_host} \"{cmd}\""
         else:
             full_cmd = cmd
         
@@ -69,6 +88,13 @@ class ListenerAutoRestart(BaseRunbook):
                 text=True,
                 timeout=60
             )
+            
+            # DEBUG
+            self.logger.info(f"CMD: {full_cmd}")
+            self.logger.info(f"RET: {result.returncode}")
+            self.logger.info(f"OUT: {result.stdout}")
+            self.logger.info(f"ERR: {result.stderr}")
+            
             return result.returncode, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
             return -1, "", "Timeout"
