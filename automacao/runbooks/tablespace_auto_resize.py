@@ -62,7 +62,7 @@ class TablespaceAutoResize(BaseRunbook):
     SQL_ADD_DATAFILE = """
         ALTER TABLESPACE {tablespace_name} 
         ADD DATAFILE '{new_file_path}' 
-        SIZE {size_mb}M AUTOEXTEND ON NEXT 100M MAXSIZE 32G
+        SIZE {size_mb}M AUTOEXTEND ON NEXT 100M MAXSIZE 2G
     """
     
     def __init__(
