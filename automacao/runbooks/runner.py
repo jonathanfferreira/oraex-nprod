@@ -19,6 +19,11 @@ from typing import List, Dict, Optional
 # Setup path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+# Configurar Oracle Client temporariamente (Hardcoded para testes)
+oracle_client = r"D:\PESSOAL\ESTUDOS\Oracle\instantclient-basic-windows.x64-19.29.0.0.0dbru\instantclient_19_29"
+if oracle_client not in os.environ["PATH"]:
+    os.environ["PATH"] = oracle_client + ";" + os.environ["PATH"]
+
 try:
     from automacao.utils.connection import ConnectionConfig
     from automacao.utils.alerting import AlertManager, send_alert
@@ -42,11 +47,19 @@ class RunbookRunner:
         self,
         config: Optional["ConnectionConfig"] = None,
         oracle_home: str = "/u01/app/oracle/product/19.0.0/dbhome_1",
-        dry_run: bool = False
+        dry_run: bool = False,
+        ssh_host: Optional[str] = None,
+        ssh_user: str = "oracle",
+        ssh_port: int = 22,
+        ssh_key_path: Optional[str] = None
     ):
         self.config = config
         self.oracle_home = oracle_home
         self.dry_run = dry_run
+        self.ssh_host = ssh_host
+        self.ssh_user = ssh_user
+        self.ssh_port = ssh_port
+        self.ssh_key_path = ssh_key_path
         self.results: List[Dict] = []
         self.logger = logging.getLogger("RunbookRunner")
     
@@ -56,6 +69,8 @@ class RunbookRunner:
         self.logger.info("INICIANDO EXECUÇÃO DE TODOS OS RUNBOOKS")
         self.logger.info(f"Timestamp: {datetime.now().isoformat()}")
         self.logger.info(f"Dry-run: {self.dry_run}")
+        if self.ssh_host:
+            self.logger.info(f"SSH Target: {self.ssh_user}@{self.ssh_host}:{self.ssh_port}")
         self.logger.info("=" * 60)
         
         for name in self.AVAILABLE_RUNBOOKS:
@@ -80,6 +95,7 @@ class RunbookRunner:
             
             # Instanciar baseado no tipo
             if runbook_name == "tablespace":
+                # Tablespace runbook ainda não tem SSH args implementados, mas não usa
                 runbook = runbook_class(
                     config=self.config,
                     dry_run=self.dry_run
@@ -87,13 +103,21 @@ class RunbookRunner:
             elif runbook_name == "listener":
                 runbook = runbook_class(
                     oracle_home=self.oracle_home,
-                    dry_run=self.dry_run
+                    dry_run=self.dry_run,
+                    ssh_host=self.ssh_host,
+                    ssh_user=self.ssh_user,
+                    ssh_port=self.ssh_port,
+                    ssh_key_path=self.ssh_key_path
                 )
             elif runbook_name == "archive":
                 runbook = runbook_class(
                     config=self.config,
                     oracle_home=self.oracle_home,
-                    dry_run=self.dry_run
+                    dry_run=self.dry_run,
+                    ssh_host=self.ssh_host,
+                    ssh_user=self.ssh_user,
+                    ssh_port=self.ssh_port,
+                    ssh_key_path=self.ssh_key_path
                 )
             else:
                 runbook = runbook_class(dry_run=self.dry_run)
@@ -105,9 +129,9 @@ class RunbookRunner:
             
             self.results.append(result)
             
-            # Log resultado
-            status_emoji = "✅" if result["success"] else "❌"
-            self.logger.info(f"{status_emoji} {runbook_name}: {result['status']}")
+            # Log resultado (Sem emojis para evitar problemas no Windows)
+            status_icon = "[OK]" if result["success"] else "[NOK]"
+            self.logger.info(f"{status_icon} {runbook_name}: {result['status']}")
             
             return result
             
@@ -175,6 +199,10 @@ def main():
     parser.add_argument("--password", help="Password Oracle")
     parser.add_argument("--oracle-home", default="/u01/app/oracle/product/19.0.0/dbhome_1")
     parser.add_argument("--dry-run", action="store_true", help="Apenas detecta, não corrige")
+    parser.add_argument("--ssh-host", help="SSHost remoto")
+    parser.add_argument("--ssh-port", type=int, default=22, help="Porta SSH (default: 22)")
+    parser.add_argument("--ssh-user", default="oracle", help="Usuário SSH")
+    parser.add_argument("--ssh-key-path", help="Caminho chave privada SSH")
     parser.add_argument("--json", action="store_true", help="Output em JSON")
     parser.add_argument("--list", action="store_true", help="Listar runbooks disponíveis")
     
@@ -206,7 +234,11 @@ def main():
     runner = RunbookRunner(
         config=config,
         oracle_home=args.oracle_home,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        ssh_host=args.ssh_host,
+        ssh_user=args.ssh_user,
+        ssh_port=args.ssh_port,
+        ssh_key_path=args.ssh_key_path
     )
     
     if args.all:

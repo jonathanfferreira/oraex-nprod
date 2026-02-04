@@ -129,8 +129,9 @@ class TablespaceAutoResize(BaseRunbook):
             
             return True
             
-        except cx_Oracle.Error as e:
-            self.errors.append(f"Erro de conexão: {e}")
+        except Exception as e:
+            self.errors.append(str(e))
+            self.logger.error(f"Erro inesperado: {e}") # Debug explícito
             return False
     
     # ========== GUARDRAIL METHODS ==========

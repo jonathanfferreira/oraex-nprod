@@ -60,7 +60,9 @@ class ArchiveLogCleanup(BaseRunbook):
         retention_days: int = 7,
         dry_run: bool = False,
         ssh_host: Optional[str] = None,
-        ssh_user: str = "oracle"
+        ssh_user: str = "oracle",
+        ssh_port: int = 22,
+        ssh_key_path: Optional[str] = None
     ):
         super().__init__(name="ArchiveLogCleanup")
         self.config = config
@@ -70,6 +72,8 @@ class ArchiveLogCleanup(BaseRunbook):
         self.dry_run = dry_run
         self.ssh_host = ssh_host
         self.ssh_user = ssh_user
+        self.ssh_port = ssh_port
+        self.ssh_key_path = ssh_key_path
         self.connection: Optional[cx_Oracle.Connection] = None
         self.fra_info: Optional[Dict] = None
         self.cleanup_executed = False
@@ -77,7 +81,23 @@ class ArchiveLogCleanup(BaseRunbook):
     def _run_command(self, cmd: str) -> tuple:
         """Executa comando local ou via SSH."""
         if self.ssh_host:
-            full_cmd = f"ssh {self.ssh_user}@{self.ssh_host} '{cmd}'"
+            # Opções SSH
+            opts = [
+                "-o StrictHostKeyChecking=no",
+                "-o BatchMode=yes",
+                f"-p {self.ssh_port}"
+            ]
+            
+            if self.ssh_key_path:
+                # Windows requer aspas duplas para caminhos com espaços no CMD
+                opts.append(f"-i \"{self.ssh_key_path}\"")
+            
+            ssh_opts = " ".join(opts)
+            
+            # Usar aspas duplas para o comando remoto (Windows safe)
+            # Escapar aspas duplas internas se houver
+            cmd_escaped = cmd.replace('"', '\\"')
+            full_cmd = f"ssh {ssh_opts} {self.ssh_user}@{self.ssh_host} \"{cmd_escaped}\""
         else:
             full_cmd = cmd
         
@@ -91,6 +111,13 @@ class ArchiveLogCleanup(BaseRunbook):
                 text=True,
                 timeout=300  # 5 min para RMAN
             )
+            
+            # DEBUG
+            self.logger.info(f"CMD: {full_cmd}")
+            self.logger.info(f"RET: {result.returncode}")
+            # self.logger.info(f"OUT: {result.stdout}") # Pode ser grande
+            self.logger.info(f"ERR: {result.stderr}")
+            
             return result.returncode, result.stdout, result.stderr
         except subprocess.TimeoutExpired:
             return -1, "", "Timeout"
@@ -168,18 +195,21 @@ class ArchiveLogCleanup(BaseRunbook):
         self.log_step(f"Executando RMAN delete (retenção: {self.retention_days} dias)")
         
         # Script RMAN
-        rman_script = f"""
-export ORACLE_HOME={self.oracle_home}
-export ORACLE_SID={self.config.dsn.split('/')[-1]}
-{self.oracle_home}/bin/rman target / <<EOF
-DELETE NOPROMPT ARCHIVELOG ALL COMPLETED BEFORE 'SYSDATE-{self.retention_days}';
-CROSSCHECK ARCHIVELOG ALL;
-DELETE NOPROMPT EXPIRED ARCHIVELOG ALL;
-EXIT;
-EOF
-"""
+        # Script RMAN (Usando pipe para evitar problemas com heredoc via SSH/Windows)
+        rman_cmds = (
+            f"DELETE NOPROMPT ARCHIVELOG ALL COMPLETED BEFORE 'SYSDATE-{self.retention_days}'; "
+            "CROSSCHECK ARCHIVELOG ALL; "
+            "DELETE NOPROMPT EXPIRED ARCHIVELOG ALL; "
+            "EXIT;"
+        )
         
-        returncode, stdout, stderr = self._run_command(rman_script)
+        cmd_wrapper = (
+            f"export ORACLE_HOME={self.oracle_home} && "
+            f"export ORACLE_SID={self.config.dsn.split('/')[-1]} && "
+            f"echo \"{rman_cmds}\" | {self.oracle_home}/bin/rman target /"
+        )
+        
+        returncode, stdout, stderr = self._run_command(cmd_wrapper)
         
         if returncode != 0:
             self.errors.append(f"RMAN falhou: {stderr}")
@@ -240,6 +270,8 @@ def main():
     parser.add_argument("--threshold", type=int, default=80, help="% threshold (default: 80)")
     parser.add_argument("--retention", type=int, default=7, help="Dias de retenção (default: 7)")
     parser.add_argument("--ssh-host", help="Host remoto via SSH")
+    parser.add_argument("--ssh-port", type=int, default=22, help="Porta SSH (default: 22)")
+    parser.add_argument("--ssh-key-path", help="Caminho chave privada SSH")
     parser.add_argument("--dry-run", action="store_true", help="Apenas detecta, não corrige")
     
     args = parser.parse_args()
@@ -266,6 +298,9 @@ def main():
         threshold=args.threshold,
         retention_days=args.retention,
         ssh_host=args.ssh_host,
+        ssh_user=args.user or "oracle", # Assumindo user oracle para SSH se não especificado diferente
+        ssh_port=args.ssh_port,
+        ssh_key_path=args.ssh_key_path,
         dry_run=args.dry_run
     )
     
