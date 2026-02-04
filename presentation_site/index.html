@@ -636,6 +636,28 @@
             </div>
         </section>
 
+        <!-- FILE STRUCTURE TREE -->
+        <section class="animate-entrance" style="margin-bottom: 6rem;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem; text-align: center;">📂 Estrutura do Repo</h2>
+            <div class="tech-card" style="max-width: 800px; margin: 0 auto; background: rgba(2, 6, 23, 0.8);">
+                <pre style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; overflow-x: auto;">
+<span style="color: var(--primary);">oraex-nprod/</span>
+├── <span style="color: var(--success);">automacao/</span>
+│   ├── monitoramento/     <span style="color: #666;"># Scripts de healthcheck</span>
+│   ├── observability/     <span style="color: #666;"># Prometheus exporter</span>
+│   ├── runbooks/          <span style="color: #666;"># Self-healing scripts</span>
+│   └── utils/             <span style="color: #666;"># Utilitários (connection, alerting)</span>
+├── <span style="color: var(--warning);">docs/</span>                  <span style="color: #666;"># Documentação (GitHub Pages)</span>
+├── <span style="color: var(--accent);">infra/</span>
+│   ├── ansible/           <span style="color: #666;"># Playbooks Ansible</span>
+│   └── terraform/         <span style="color: #666;"># IaC (templates)</span>
+├── <span style="color: var(--secondary);">observability/</span>         <span style="color: #666;"># Stack Prometheus/Grafana</span>
+├── scripts/               <span style="color: #666;"># Scripts auxiliares</span>
+├── tests/                 <span style="color: #666;"># Testes unitários</span>
+└── .github/workflows/     <span style="color: #666;"># CI/CD Pipelines</span></pre>
+            </div>
+        </section>
+
         <!-- ROADMAP -->
         <section id="roadmap" class="animate-entrance" style="padding: 4rem 0; text-align: center;">
             <div class="module-card" style="display: inline-block; max-width: 900px; padding: 3rem;">
