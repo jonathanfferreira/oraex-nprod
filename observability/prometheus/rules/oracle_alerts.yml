@@ -21,6 +21,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          runbook: tablespace
         annotations:
           summary: "Tablespace {{ $labels.tablespace }} usage above 85%"
           description: "Tablespace {{ $labels.tablespace }} is at {{ $value }}% usage."
@@ -31,6 +32,7 @@ groups:
         for: 2m
         labels:
           severity: critical
+          runbook: tablespace
         annotations:
           summary: "Tablespace {{ $labels.tablespace }} usage above 95%"
           description: "Tablespace {{ $labels.tablespace }} is at {{ $value }}% - IMMEDIATE ACTION REQUIRED."
@@ -41,6 +43,7 @@ groups:
         for: 5m
         labels:
           severity: warning
+          runbook: archive
         annotations:
           summary: "Flash Recovery Area usage above 80%"
           description: "FRA is at {{ $value }}% - consider running archive log cleanup."
@@ -51,6 +54,7 @@ groups:
         for: 2m
         labels:
           severity: critical
+          runbook: archive
         annotations:
           summary: "Flash Recovery Area usage above 95%"
           description: "FRA is at {{ $value }}% - database may stop archiving."

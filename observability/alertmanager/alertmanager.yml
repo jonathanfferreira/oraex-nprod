@@ -16,24 +16,26 @@ route:
   repeat_interval: 4h
   
   routes:
-    # Critical alerts - immediate notification
+    # Self-Healing alerts
     - match:
-        severity: critical
-      receiver: 'critical-receiver'
-      group_wait: 10s
-      repeat_interval: 1h
-    
-    # Warning alerts - grouped and less frequent
+        runbook: 'tablespace'
+      receiver: 'self-healing-receiver'
+      continue: true
     - match:
-        severity: warning
-      receiver: 'warning-receiver'
-      group_wait: 1m
+        runbook: 'archive'
+      receiver: 'self-healing-receiver'
+      continue: true
 
 receivers:
   - name: 'default-receiver'
     webhook_configs:
-      - url: 'http://localhost:5001/webhook'
+      - url: 'http://localhost:5001/alert'
         send_resolved: true
+
+  - name: 'self-healing-receiver'
+    webhook_configs:
+      - url: 'http://localhost:5001/alert'
+        send_resolved: false
 
   - name: 'critical-receiver'
     slack_configs:
