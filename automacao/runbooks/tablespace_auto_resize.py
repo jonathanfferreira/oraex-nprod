@@ -37,10 +37,21 @@ class TablespaceAutoResize(BaseRunbook):
     
     Fluxo:
     1. Detecta tablespaces acima do threshold
-    2. Para cada uma, tenta adicionar datafile ou resize
-    3. Valida se o espaço foi liberado
-    4. Notifica resultado
+    2. GUARDRAIL: Verifica espaço em disco
+    3. GUARDRAIL: Verifica limite de execuções
+    4. Para cada uma, tenta adicionar datafile ou resize
+    5. Valida se o espaço foi liberado
+    6. Notifica resultado ou escala para DBA
     """
+    
+    # ========== GUARDRAILS CONFIGURATION ==========
+    MIN_DISK_FREE_GB = 5          # Mínimo de espaço livre no disco (GB)
+    MAX_RESIZES_PER_DAY = 2       # Máximo de resizes por tablespace por dia
+    MAX_DATAFILE_SIZE_MB = 2048   # Tamanho máximo do datafile (MB)
+    ESCALATION_THRESHOLD = 98    # Acima disso, escalar para DBA
+    
+    # Arquivo para controle de frequência de execuções
+    EXECUTION_LOG_FILE = "/tmp/tablespace_resize_log.json"
     
     SQL_CHECK_TABLESPACES = """
         SELECT 
@@ -59,6 +70,16 @@ class TablespaceAutoResize(BaseRunbook):
         ORDER BY 2 DESC
     """
     
+    # Query para verificar espaço em disco (filesystem do datafile)
+    SQL_CHECK_DISK_SPACE = """
+        SELECT 
+            file_name,
+            ROUND(bytes / 1024 / 1024 / 1024, 2) as size_gb
+        FROM dba_data_files 
+        WHERE tablespace_name = :tablespace
+        AND ROWNUM = 1
+    """
+    
     SQL_ADD_DATAFILE = """
         ALTER TABLESPACE {tablespace_name} 
         ADD DATAFILE '{new_file_path}' 
@@ -70,16 +91,19 @@ class TablespaceAutoResize(BaseRunbook):
         config: "ConnectionConfig",
         threshold: int = 90,
         add_size_mb: int = 1024,
-        dry_run: bool = False
+        dry_run: bool = False,
+        escalation_callback: Optional[callable] = None
     ):
         super().__init__(name="TablespaceAutoResize")
         self.config = config
         self.threshold = threshold
-        self.add_size_mb = add_size_mb
+        self.add_size_mb = min(add_size_mb, self.MAX_DATAFILE_SIZE_MB)  # Guardrail
         self.dry_run = dry_run
+        self.escalation_callback = escalation_callback
         self.connection: Optional[cx_Oracle.Connection] = None
         self.critical_tablespaces: List[Dict] = []
         self.remediated: List[str] = []
+        self.escalated: List[str] = []  # Tablespaces que foram escaladas
     
     def validate_preconditions(self) -> bool:
         """Valida conexão e permissões."""
@@ -109,6 +133,106 @@ class TablespaceAutoResize(BaseRunbook):
             self.errors.append(f"Erro de conexão: {e}")
             return False
     
+    # ========== GUARDRAIL METHODS ==========
+    
+    def _check_execution_limit(self, tablespace_name: str) -> bool:
+        """
+        GUARDRAIL: Verifica se a tablespace já foi expandida hoje.
+        Retorna True se pode continuar, False se atingiu limite.
+        """
+        import json
+        from datetime import datetime, date
+        
+        log_file = self.EXECUTION_LOG_FILE
+        today = date.today().isoformat()
+        
+        # Carregar log existente
+        try:
+            with open(log_file, 'r') as f:
+                log = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            log = {}
+        
+        # Verificar contagem do dia
+        ts_key = f"{tablespace_name}_{today}"
+        count = log.get(ts_key, 0)
+        
+        if count >= self.MAX_RESIZES_PER_DAY:
+            self.logger.warning(
+                f"GUARDRAIL: {tablespace_name} já foi expandida {count}x hoje. "
+                f"Limite: {self.MAX_RESIZES_PER_DAY}/dia"
+            )
+            return False
+        
+        # Incrementar contador
+        log[ts_key] = count + 1
+        try:
+            with open(log_file, 'w') as f:
+                json.dump(log, f)
+        except IOError:
+            pass  # Não falhar se não conseguir gravar
+        
+        return True
+    
+    def _should_escalate(self, pct_used: float, tablespace_name: str) -> bool:
+        """
+        GUARDRAIL: Determina se deve escalar para DBA humano.
+        
+        Escala quando:
+        - Uso > ESCALATION_THRESHOLD (98%)
+        - Limite diário atingido
+        - Tablespaces críticas (SYSTEM, SYSAUX, UNDO)
+        """
+        critical_tablespaces = {'SYSTEM', 'SYSAUX', 'UNDOTBS1', 'UNDO'}
+        
+        if pct_used >= self.ESCALATION_THRESHOLD:
+            self.logger.warning(
+                f"ESCALAÇÃO: {tablespace_name} em {pct_used}% "
+                f"(acima de {self.ESCALATION_THRESHOLD}%)"
+            )
+            return True
+        
+        if tablespace_name in critical_tablespaces and pct_used >= 95:
+            self.logger.warning(
+                f"ESCALAÇÃO: Tablespace crítica {tablespace_name} em {pct_used}%"
+            )
+            return True
+        
+        if not self._check_execution_limit(tablespace_name):
+            return True
+        
+        return False
+    
+    def _escalate_to_dba(self, tablespace_name: str, pct_used: float, reason: str):
+        """
+        Escala o problema para DBA humano.
+        """
+        message = (
+            f"🚨 ESCALAÇÃO DBA NECESSÁRIA 🚨\n"
+            f"Tablespace: {tablespace_name}\n"
+            f"Uso atual: {pct_used}%\n"
+            f"Motivo: {reason}\n"
+            f"Ação automática: BLOQUEADA\n"
+            f"Requer intervenção manual."
+        )
+        
+        self.logger.critical(message)
+        self.escalated.append(tablespace_name)
+        
+        # Enviar alerta
+        send_alert(
+            "CRITICAL",
+            f"Escalação DBA: {tablespace_name}",
+            {"tablespace": tablespace_name, "pct_used": pct_used, "reason": reason}
+        )
+        
+        # Callback customizado (se configurado)
+        if self.escalation_callback:
+            try:
+                self.escalation_callback(tablespace_name, pct_used, reason)
+            except Exception as e:
+                self.logger.error(f"Erro no callback de escalação: {e}")
+    
     def execute(self) -> bool:
         """Detecta e corrige tablespaces cheias."""
         self.log_step(f"Verificando tablespaces > {self.threshold}%")
@@ -135,6 +259,19 @@ class TablespaceAutoResize(BaseRunbook):
                 self.log_step(f"[DRY-RUN] Pulando resize de {ts_name}")
                 continue
             
+            # ========== GUARDRAILS CHECK ==========
+            # Verificar se deve escalar para DBA ao invés de auto-remediar
+            if self._should_escalate(pct_used, ts_name):
+                reason = (
+                    f"Uso em {pct_used}% (limite: {self.ESCALATION_THRESHOLD}%) "
+                    if pct_used >= self.ESCALATION_THRESHOLD
+                    else f"Limite diário de {self.MAX_RESIZES_PER_DAY} resizes atingido"
+                )
+                self._escalate_to_dba(ts_name, pct_used, reason)
+                self.log_step(f"[ESCALADO] {ts_name} -> DBA", success=False)
+                continue
+            
+            # ========== AUTO-REMEDIATION ==========
             # Tentar adicionar datafile
             if self._add_datafile(ts_name, sample_file):
                 self.remediated.append(ts_name)
