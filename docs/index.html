@@ -366,6 +366,52 @@
             </div>
         </section>
 
+        <!-- LIVE TERMINAL SIMULATOR -->
+        <section class="animate-entrance" style="margin-bottom: 6rem;">
+            <h2 style="font-size: 2.5rem; margin-bottom: 2rem; text-align: center;">🖥️ Execução em Tempo Real</h2>
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                    <span
+                        style="font-family: 'Inter', sans-serif; font-size: 0.8rem; color: #666; margin-left: 10px;">oracle@node1:~/oraex-nprod</span>
+                </div>
+                <div style="line-height: 1.6;">
+                    <span style="color: #666;"># Executando runbook de auto-resize para tablespace USERS</span><br>
+                    <span style="color: var(--success);">oracle@node1:~$</span> python3
+                    automacao/runbooks/tablespace_auto_resize.py --target USERS<br>
+                    <br>
+                    <span style="color: var(--primary);">[INFO]</span> Conectando ao banco de dados ORCL... <span
+                        style="color: var(--success);">[OK]</span><br>
+                    <span style="color: var(--primary);">[INFO]</span> Verificando tablespace 'USERS'...<br>
+                    <span style="color: var(--warning);">[WARN]</span> Utilização atual: <strong>92.5%</strong>
+                    (Threshold: 90%)<br>
+                    <span style="color: var(--primary);">[INFO]</span> Iniciando ação de resize (+500MB)...<br>
+                    <span style="color: #94a3b8;">&gt; ALTER DATABASE DATAFILE
+                        '/u01/app/oracle/oradata/ORCL/users01.dbf' RESIZE 2500M;</span><br>
+                    <span style="color: var(--primary);">[INFO]</span> Comando SQL executado com sucesso.<br>
+                    <span style="color: var(--primary);">[INFO]</span> Verificando nova utilização...<br>
+                    <span style="color: var(--success);">[OK]</span> Nova utilização: <strong>76.2%</strong><br>
+                    <span style="color: var(--primary);">[INFO]</span> Registrando métrica no Prometheus... <span
+                        style="color: var(--success);">[DONE]</span><br>
+                    <br>
+                    <span style="color: var(--success);">oracle@node1:~$</span> _<span class="blink">|</span>
+                </div>
+            </div>
+            <style>
+                .blink {
+                    animation: blinker 1s linear infinite;
+                }
+
+                @keyframes blinker {
+                    50% {
+                        opacity: 0;
+                    }
+                }
+            </style>
+        </section>
+
         <!-- TECH STACK -->
         <section class="animate-entrance" style="margin-bottom: 6rem;">
             <h2 style="font-size: 2.5rem; margin-bottom: 1rem; text-align: center;">🛠️ Stack Tecnológica</h2>
