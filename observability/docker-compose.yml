@@ -3,7 +3,7 @@ version: '3.8'
 # ORAEX Observability Stack
 # -------------------------
 # Inclui Prometheus para coleta de métricas e Grafana para visualização.
-# 
+#
 # Uso:
 #   docker-compose -f observability/docker-compose.yml up -d
 #
@@ -82,6 +82,25 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
+    networks:
+      - oraex-net
+
+  # ORAEX Webhook Receiver - Self-Healing Automation
+  webhook-receiver:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: oraex-webhook
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - ORACLE_DSN=${ORACLE_DSN:-oracle-db:1521/orcl}
+      - ORACLE_USER=${ORACLE_USER:-system}
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD:-oracle}
+      - WEBHOOK_PORT=5001
+    depends_on:
+      - alertmanager
     networks:
       - oraex-net
 

@@ -1,0 +1,21 @@
+# Ignorar arquivos desnecessários no Docker build
+.git
+.gitignore
+.github
+.vagrant
+*.pyc
+__pycache__
+*.md
+*.log
+*.spec
+docs/
+presentation_site/
+infra/
+tests/
+.agent/
+*.png
+*.jpg
+*.webp
+venv/
+.env
+*.bak
