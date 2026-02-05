@@ -1,100 +1,155 @@
-# ORAEX - Modernização do Monitoramento Oracle (Getnet)
+# ORAEX-NPROD - Oracle Automation & Self-Healing Stack
 
 [![CI](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+
+> 🚀 **Automação inteligente para Oracle Database com Self-Healing e Observabilidade**
 
 ## 📌 Visão Geral
 
-Projeto de automação e sustentação de bancos de dados Oracle, substituindo scripts Shell legados por Python modular e aderente às práticas de **DBRE** (Database Reliability Engineering) e **Compliance** (Book DBA).
+Solução completa de automação e auto-remediação para bancos de dados Oracle 19c, desenvolvida para a **Getnet**. Substitui scripts Shell legados por Python modular, aderente às práticas de **DBRE** (Database Reliability Engineering) e **Compliance** Getnet.
 
-**Objetivo Getnet:** Transformar toda infraestrutura em **100% Infrastructure as Code (IaC)** e Automação Inteligente.
+**🔗 Links:**
+
+- [📊 Apresentação do Projeto](https://jonathanfferreira.github.io/oraex-nprod/)
+- [📋 Relatório Final](docs/FINAL_REPORT.md)
 
 ---
 
-## 📊 Status Atual (03/02/2026)
+## ✅ Status do Projeto (04/02/2026)
 
-### ✅ Entregas Recentes
+| Componente | Status |
+|------------|--------|
+| Infraestrutura (2 VMs Oracle 19c) | ✅ 100% |
+| Automação Python (15+ scripts) | ✅ 100% |
+| Self-Healing (4 runbooks) | ✅ 100% |
+| Observabilidade (Prometheus + Grafana) | ✅ 100% |
+| CI/CD (GitHub Actions) | ✅ 100% |
+| Packaging (Docker + PyInstaller) | ✅ 100% |
 
-- **Oracle Database 19c (Node 2)**: Instalação bem-sucedida em modo Standalone.
-  - **Compliance**: Estrutura de diretórios `/u01` (Binários) e `/u02` (Dados) implementada.
-  - **Automação**: Scripts de deploy silencioso (`db_install.rsp`, `dbca_create.rsp`) validados.
-  - **Bypass**: Solução de contorno para instalação em Oracle Linux 8 aplicada.
+---
 
-- **Stack de Automação Python**:
-  - `oracle_healthcheck.py`: Diagnóstico completo.
-  - `check_terms.py`: Compliance de particionamento.
+## 🏗️ Arquitetura
 
-### 🚧 Em Andamento
-
-- Configuração de monitoramento no Node 2.
-- Planejamento de infraestrutura para RAC Real (Discos Compartilhados).
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ORAEX Self-Healing Stack                  │
+├─────────────────────────────────────────────────────────────┤
+│  Prometheus → Alertmanager → Webhook → Runner → Oracle VM  │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 📂 Estrutura do Projeto
 
 ```
-nprod/
-├── automacao/                  # 🤖 Scripts Python de Automação
-│   ├── diagnosticos/           # Healthcheck e Compliance
-│   ├── monitoramento/          # Particionamento, Tablespaces
-│   ├── runbooks/               # 🆕 Self-Healing Automation
-│   │   ├── runner.py           # Orquestrador de runbooks
+oraex-nprod/
+├── automacao/
+│   ├── monitoramento/      # Healthcheck, Tablespaces
+│   ├── runbooks/           # Self-Healing Automation
+│   │   ├── runner.py       # Orquestrador
 │   │   ├── tablespace_auto_resize.py
 │   │   ├── listener_auto_restart.py
 │   │   └── archive_cleanup.py
-│   ├── utils/                  # 🆕 Utilitários centralizados
-│   │   ├── connection.py       # ConnectionConfig
-│   │   └── alerting.py         # Sistema de alertas
-│   └── sustentacao/            # Housekeeper, Log Rotate
-├── docs/                       # 📚 Documentação
-│   ├── referencias/            # Documentos Oficiais (Getnet/Oracle)
-│   ├── RELATORIO_ENTREGA_NODE2.md # 🆕 Detalhes da entrega do Node 2
-│   └── ...
-├── infra/                      # 🏗️ Infraestrutura (IaC)
-│   ├── ansible/                # Playbooks de Configuração
-│   └── terraform/              # Provisionamento
-├── scripts/                    # 🛠️ Scripts Shell Auxiliares
-│   ├── deploy_oracle_software.sh # Instalação de Binários
-│   ├── create_database.sh        # Criação de Banco (DBCA)
-│   └── verify_db.sh              # Validação de Instância
-└── Vagrantfile                 # Definição de Ambiente Local
+│   └── utils/              # Connection, Alerting
+├── observability/
+│   ├── prometheus/         # Configs + Alert Rules
+│   ├── grafana/            # Dashboards
+│   └── alertmanager/       # Alerting Routes
+├── infra/
+│   ├── ansible/            # Playbooks
+│   └── Vagrantfile         # VMs locais
+├── docs/                   # Documentação
+├── Dockerfile              # Container Python
+├── oraex.spec              # PyInstaller
+└── webhook_receiver.py     # Flask Webhook
 ```
 
 ---
 
-## 🚀 Como Executar (Ambiente Local)
+## 🚀 Quick Start
 
-### 1. Iniciar VMs
+### Opção 1: Docker Compose
 
 ```bash
-vagrant up oracle-rac-node1 oracle-rac-node2
+cd observability/
+docker-compose up -d
+# Acesse: Grafana http://localhost:3000 (admin/oraex123)
 ```
 
-### 2. Acessar Ambiente (Node 2)
+### Opção 2: Execução Local
 
 ```bash
-vagrant ssh oracle-rac-node2
+pip install -r requirements.txt
+python webhook_receiver.py  # Terminal 1
+python test_alert_simulator.py --runbook tablespace  # Terminal 2
 ```
 
-### 3. Verificar Banco de Dados
+### Opção 3: VMs Vagrant
 
 ```bash
-sudo -u oracle bash /vagrant/scripts/verify_db.sh
+cd infra/
+vagrant up oracle-rac-node1
+vagrant ssh oracle-rac-node1
 ```
 
 ---
 
-## 🛠️ Principais Módulos Python
+## 🛠️ Self-Healing Runbooks
 
-| Script | Função | Status |
-|--------|--------|--------|
-| `oracle_healthcheck.py` | Diagnóstico completo + Compliance | ✅ Prod |
-| `check_partitioning.py` | Validação preditiva de partições | ✅ Prod |
-| `check_tablespaces.py` | Monitoramento de tablespaces | ✅ Prod |
-| `asm_capacity_report.py` | Auditoria ASM + Predição | ✅ Prod |
+| Runbook | Trigger | Ação |
+|---------|---------|------|
+| `tablespace_auto_resize` | TS > 85% | Adiciona datafile |
+| `listener_auto_restart` | Listener Down | Restart automático |
+| `archive_cleanup` | FRA > 80% | Limpa archive logs |
+
+**Executar runbook manualmente:**
+
+```bash
+python -m automacao.runbooks.runner --runbook tablespace --dry-run
+```
 
 ---
 
-## 📖 Referências
+## 📊 Observabilidade
 
-Os PDFs de documentação e relatórios detalhados estão em `docs/`.
+| Componente | URL | Credenciais |
+|------------|-----|-------------|
+| Grafana | <http://localhost:3000> | admin / oraex123 |
+| Prometheus | <http://localhost:9090> | - |
+| Alertmanager | <http://localhost:9093> | - |
+
+---
+
+## 📦 Packaging
+
+```bash
+# Build Docker
+python build.py docker
+
+# Build Executáveis Standalone
+python build.py pyinstaller
+```
+
+---
+
+## 📖 Documentação
+
+- [Guia de Deploy Getnet](docs/deployment_guide_getnet.md)
+- [Relatório Final](docs/FINAL_REPORT.md)
+
+---
+
+## 👤 Autor
+
+**Jonathan Ferreira**  
+Projeto: ORAEX-NPROD  
+Cliente: Getnet
+
+---
+
+## 📜 Licença
+
+MIT License - veja [LICENSE](LICENSE) para detalhes.
