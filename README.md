@@ -1,4 +1,4 @@
-# ORAEX-NPROD - Oracle Automation & Self-Healing Stack
+# Projeto NProd - QA - GETNET Stack
 
 [![CI](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
