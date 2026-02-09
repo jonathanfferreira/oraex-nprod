@@ -1,0 +1,154 @@
+---
+- name: Configure Oracle RAC Node
+  hosts: all
+  become: yes
+  vars:
+    oracle_home: "/u01/app/oracle/product/19.0.0/dbhome_1"
+    oracle_sid: "orcl"
+    oracle_base: "/u01/app/oracle"
+    oracle_inventory: "/u01/app/oraInventory"
+    # Passwords (In production use Vault)
+    sys_password: "Oracle123!"
+    pdb_name: "orclpdb"
+
+  tasks:
+    # ---------------------------------------------------------
+    # Role 1: Prerequisites (Maps to deploy_rac_prerequisites.sh)
+    # ---------------------------------------------------------
+    - name: "PREREQ | Install Oracle Preinstall Package"
+      dnf:
+        name: oracle-database-preinstall-19c
+        state: present
+      tags: [prereq]
+
+    - name: "PREREQ | Install Build Tools (Fixes Binary Corruption)"
+      dnf:
+        name:
+          - make
+          - binutils
+          - gcc
+          - glibc-devel
+          - libaio-devel
+          - libnsl
+          - unzip
+        state: present
+      tags: [prereq]
+
+    - name: "PREREQ | Create Groups"
+      group:
+        name: "{{ item }}"
+        state: present
+      loop: [oinstall, dba, asmadmin, asmdba, asmoper]
+      tags: [prereq]
+
+    - name: "PREREQ | Create Oracle User"
+      user:
+        name: oracle
+        group: oinstall
+        groups: dba,asmdba
+        append: yes
+      tags: [prereq]
+
+    - name: "PREREQ | Create Grid User"
+      user:
+        name: grid
+        group: oinstall
+        groups: asmadmin,asmdba,asmoper
+        append: yes
+      tags: [prereq]
+
+    - name: "PREREQ | Create Directories"
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: '0775'
+        recurse: yes
+      loop:
+        - "/u01/app/oracle"
+        - "/u02/oracle/oradata"
+        - "/u02/oracle/fast_recovery_area"
+      tags: [prereq]
+
+    # ---------------------------------------------------------
+    # Role 2: Software Install (Maps to deploy_oracle_software.sh)
+    # ---------------------------------------------------------
+    - name: "SOFT | Check if Oracle Home is populated"
+      stat:
+        path: "{{ oracle_home }}/bin/oracle"
+      register: oracle_bin
+
+    - name: "SOFT | Create Oracle Home Directory"
+      file:
+        path: "{{ oracle_home }}"
+        state: directory
+        owner: oracle
+        group: oinstall
+        mode: '0775'
+      when: not oracle_bin.stat.exists
+
+    - name: "SOFT | Unzip Oracle Home"
+      unarchive:
+        src: "/vagrant/LINUX.X64_193000_db_home.zip"
+        dest: "{{ oracle_home }}"
+        remote_src: yes
+        owner: oracle
+        group: oinstall
+        creates: "{{ oracle_home }}/runInstaller"
+      when: not oracle_bin.stat.exists
+
+    - name: "SOFT | Install Oracle Software (Silent)"
+      shell: "./runInstaller -silent -ignorePrereq -waitforcompletion -responseFile /vagrant/scripts/db_install.rsp"
+      args:
+        chdir: "{{ oracle_home }}"
+      become_user: oracle
+      when: not oracle_bin.stat.exists
+      register: install_out
+      tags: [software]
+
+    - name: "SOFT | Run Root Scripts"
+      shell: "{{ oracle_inventory }}/orainstRoot.sh && {{ oracle_home }}/root.sh"
+      when: not oracle_bin.stat.exists
+      tags: [software]
+
+    - name: "DB | Check if Database exists in oratab"
+      shell: "grep ^{{ oracle_sid }}: /etc/oratab"
+      register: db_exists
+      failed_when: false
+      changed_when: false
+      tags: [db]
+
+    - name: "DB | Copy DBCA Response File Template"
+      template:
+        src: "../templates/dbca.rsp.j2"
+        dest: "/home/oracle/dbca_{{ oracle_sid }}.rsp"
+        owner: oracle
+        group: oinstall
+      when: db_exists.rc != 0
+      tags: [db]
+
+    - name: "DB | Execute DBCA (Create Database)"
+      shell: "{{ oracle_home }}/bin/dbca -silent -createDatabase -responseFile /home/oracle/dbca_{{ oracle_sid }}.rsp"
+      become_user: oracle
+      when: db_exists.rc != 0
+      register: dbca_out
+      tags: [db]
+
+    - name: "POST | Create Oracle Profile (Getnet Standard)"
+      template:
+        src: "../templates/db_profile.j2"
+        dest: "/home/oracle/db_profile"
+        owner: oracle
+        group: oinstall
+        mode: '0755'
+      tags: [post]
+
+    - name: "POST | Add Profile to bash_profile"
+      lineinfile:
+        path: "/home/oracle/.bash_profile"
+        line: ". /home/oracle/db_profile"
+        state: present
+      tags: [post]
+
+    # This is where we would trigger DBCA using the response file

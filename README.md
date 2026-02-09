@@ -1,155 +1,134 @@
-# Projeto NProd - QA - GETNET Stack
+# ORAEX Lab: Oracle Database Reliability Engineering (DBRE)
 
-[![CI](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathanfferreira/oraex-nprod/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> 🚀 **Automated Oracle Database Infrastructure & Self-Healing Platform**
+>
+> *From ISO to Automation: A Deep Dive into SRE, Python, and Ansible.*
+
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-
-> 🚀 **Automação inteligente para Oracle Database com Self-Healing e Observabilidade**
-
-## 📌 Visão Geral
-
-Solução completa de automação e auto-remediação para bancos de dados Oracle 19c, desenvolvida para a **Getnet**. Substitui scripts Shell legados por Python modular, aderente às práticas de **DBRE** (Database Reliability Engineering) e **Compliance** Getnet.
-
-**🔗 Links:**
-
-- [📊 Apresentação do Projeto](https://jonathanfferreira.github.io/oraex-nprod/)
-- [📋 Relatório Final](docs/FINAL_REPORT.md)
+[![Ansible](https://img.shields.io/badge/Ansible-Infrastructure-red.svg)](https://www.ansible.com/)
+[![Oracle 19c](https://img.shields.io/badge/Oracle-19c-orange.svg)](https://www.oracle.com/database/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## ✅ Status do Projeto (04/02/2026)
+## 📖 About The Project
 
-| Componente | Status |
-|------------|--------|
-| Infraestrutura (2 VMs Oracle 19c) | ✅ 100% |
-| Automação Python (15+ scripts) | ✅ 100% |
-| Self-Healing (4 runbooks) | ✅ 100% |
-| Observabilidade (Prometheus + Grafana) | ✅ 100% |
-| CI/CD (GitHub Actions) | ✅ 100% |
-| Packaging (Docker + PyInstaller) | ✅ 100% |
+**ORAEX Lab** is a personal engineering study designed to simulate a real-world, high-performance database environment. The goal was to move away from manual DBA tasks ("ClickOps") and embrace **Database Reliability Engineering (DBRE)** principles.
 
----
+This repository contains the complete Infrastructure as Code (IaC) and Automation suite used to build, configure, and manage Oracle 19c databases in a **Non-Production (NPROD)** simulation.
 
-## 🏗️ Arquitetura
+### 🌟 Key Features
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    ORAEX Self-Healing Stack                  │
-├─────────────────────────────────────────────────────────────┤
-│  Prometheus → Alertmanager → Webhook → Runner → Oracle VM  │
-└─────────────────────────────────────────────────────────────┘
-```
+- **Infrastructure as Code**: `Vagrant` + `VirtualBox` to simulate Data Center hardware (Shared Disks, Private Network).
+- **Configuration Management**: `Ansible` playbooks for OS bootstrapping (Kernel, Limits, Packages) and Oracle Grid/DB deployment.
+- **Smart Automation**: A Python-based "Robot DBA" that monitors metrics and executes self-healing runbooks.
+- **Observability**: Prometheus & Grafana stack for real-time metrics, not just "up/down" monitoring.
 
 ---
 
-## 📂 Estrutura do Projeto
+## 🏗️ Architecture
 
+The lab simulates a RAC-ready architecture with automated management:
+
+```mermaid
+graph TD
+    subgraph "Infrastructure (Vagrant)"
+        Node1[Oracle Node 1]
+        Node2[Oracle Node 2]
+        Storage[Shared ASM Disks]
+    end
+
+    subgraph "Automation (Python)"
+        Monitor[Monitor Service]
+        SelfHeal[Self-Healing Runbooks]
+        Backup[RMAN Manager]
+    end
+
+    subgraph "Observability"
+        Prometheus
+        Grafana
+        AlertManager
+    end
+
+    Monitor -->|Metrics| Prometheus
+    AlertManager -->|Webhook| SelfHeal
+    SelfHeal -->|Fix| Node1
 ```
+
+---
+
+## 📂 Project Structure
+
+```bash
 oraex-nprod/
-├── automacao/
-│   ├── monitoramento/      # Healthcheck, Tablespaces
-│   ├── runbooks/           # Self-Healing Automation
-│   │   ├── runner.py       # Orquestrador
-│   │   ├── tablespace_auto_resize.py
-│   │   ├── listener_auto_restart.py
-│   │   └── archive_cleanup.py
-│   └── utils/              # Connection, Alerting
-├── observability/
-│   ├── prometheus/         # Configs + Alert Rules
-│   ├── grafana/            # Dashboards
-│   └── alertmanager/       # Alerting Routes
-├── infra/
-│   ├── ansible/            # Playbooks
-│   └── Vagrantfile         # VMs locais
-├── docs/                   # Documentação
-├── Dockerfile              # Container Python
-├── oraex.spec              # PyInstaller
-└── webhook_receiver.py     # Flask Webhook
+├── infra/                  # The Foundation
+│   ├── Vagrantfile         # Defines VMs, Networks, and Shared Disks
+│   └── ansible/            # Playbooks for OS Config & Oracle Install
+├── automacao/              # The "Robot DBA" (Python)
+│   ├── runbooks/           # Logic for remedial actions
+│   │   ├── tablespace_auto_resize.py  # Auto-expand storage safely
+│   │   ├── listener_auto_restart.py   # High Availability watchdog
+│   │   ├── archive_cleanup.py         # Prevent Archiver Stuck
+│   └── backup/             # Object-Oriented RMAN Manager
+├── observability/          # Monitoring Stack
+│   ├── prometheus/         # Scrapers & Rules
+│   └── grafana/            # Dashboards
+└── Dockerfile              # Containerized Automation Runtime
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🔧 Technical Highlights
 
-### Opção 1: Docker Compose
+### 1. Self-Healing with Safety Guardrails
+
+Unlike simple shell scripts, the Python automation includes logic to prevent "cascading failures".
+*Example: The Tablespace Resizer checks if it has already expanded the file too many times today before acting.*
+
+### 2. RMAN as Code
+
+Backup management is handled by a Python class wrapper around RMAN, parsing `V$RMAN_BACKUP_JOB_DETAILS` to ensure backups are valid and logged in JSON format for auditing.
+
+### 3. Grid Infrastructure Automation
+
+The Ansible roles handle the complex prerequisites of Oracle Grid (cvuqdisk, groups, users, ASMlib) automatically, allowing for a reproducible build process.
+
+---
+
+## 🚀 Getting Started
+
+To spin up this lab on your local machine:
+
+### Prerequisites
+
+- VirtualBox & Vagrant
+- Python 3.9+
+- Ansible
+
+### Quick Start
 
 ```bash
-cd observability/
-docker-compose up -d
-# Acesse: Grafana http://localhost:3000 (admin/oraex123)
-```
+# 1. Provision Infrastructure
+cd infra
+vagrant up
 
-### Opção 2: Execução Local
+# 2. Deploy Software (Ansible)
+ansible-playbook -i inventory/hosts site.yml
 
-```bash
+# 3. Start Automation
 pip install -r requirements.txt
-python webhook_receiver.py  # Terminal 1
-python test_alert_simulator.py --runbook tablespace  # Terminal 2
-```
-
-### Opção 3: VMs Vagrant
-
-```bash
-cd infra/
-vagrant up oracle-rac-node1
-vagrant ssh oracle-rac-node1
+python -m automacao.runbooks.runner --runbook listener --dry-run
 ```
 
 ---
 
-## 🛠️ Self-Healing Runbooks
+## 👤 Author
 
-| Runbook | Trigger | Ação |
-|---------|---------|------|
-| `tablespace_auto_resize` | TS > 85% | Adiciona datafile |
-| `listener_auto_restart` | Listener Down | Restart automático |
-| `archive_cleanup` | FRA > 80% | Limpa archive logs |
-
-**Executar runbook manualmente:**
-
-```bash
-python -m automacao.runbooks.runner --runbook tablespace --dry-run
-```
+**Jonathan Ferreira**
+*Oracle DBA & Cloud Engineer | Enthusiast of SRE & DevOps*
 
 ---
 
-## 📊 Observabilidade
+## 📜 License
 
-| Componente | URL | Credenciais |
-|------------|-----|-------------|
-| Grafana | <http://localhost:3000> | admin / oraex123 |
-| Prometheus | <http://localhost:9090> | - |
-| Alertmanager | <http://localhost:9093> | - |
-
----
-
-## 📦 Packaging
-
-```bash
-# Build Docker
-python build.py docker
-
-# Build Executáveis Standalone
-python build.py pyinstaller
-```
-
----
-
-## 📖 Documentação
-
-- [Guia de Deploy Getnet](docs/deployment_guide_getnet.md)
-- [Relatório Final](docs/FINAL_REPORT.md)
-
----
-
-## 👤 Autor
-
-**Jonathan Ferreira**  
-Projeto: ORAEX-NPROD  
-Cliente: Getnet
-
----
-
-## 📜 Licença
-
-MIT License - veja [LICENSE](LICENSE) para detalhes.
+Distributed under the MIT License. See `LICENSE` for more information.

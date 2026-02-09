@@ -1,0 +1,50 @@
+---
+- name: Configure SSH Equivalence for RAC
+  hosts: "{{ target_hosts | default('rac_nodes') }}"
+  become: yes
+  tasks:
+    - name: Generate SSH Keys for Users
+      user:
+        name: "{{ item }}"
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+      loop:
+        - grid
+        - oracle
+
+    - name: Fetch Public Keys (Simulate Shared Key Exchange)
+      shell: "cat /home/{{ item }}/.ssh/id_rsa.pub"
+      register: ssh_keys
+      loop:
+        - grid
+        - oracle
+      changed_when: false
+
+    - name: Authorize Keys (Self-Equivalence for Single Node Start)
+      authorized_key:
+        user: "{{ item.item }}"
+        key: "{{ item.stdout }}"
+        state: present
+      loop: "{{ ssh_keys.results }}"
+
+    - name: Add Host Keys to Known Hosts (Avoid Prompt)
+      shell: |
+        su - {{ item }} -c "ssh-keyscan -H localhost >> ~/.ssh/known_hosts"
+        su - {{ item }} -c "ssh-keyscan -H {{ ansible_hostname }} >> ~/.ssh/known_hosts"
+        su - {{ item }} -c "ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts"
+        su - {{ item }} -c "ssh-keyscan -H {{ ansible_default_ipv4.address }} >> ~/.ssh/known_hosts"
+      loop:
+        - grid
+        - oracle
+      ignore_errors: yes
+
+    - name: Verify SSH Equivalence (Must Succeed)
+      shell: |
+        ssh -o BatchMode=yes {{ item }} date
+      loop:
+        - localhost
+        - "{{ ansible_hostname }}"
+      become: yes
+      become_user: grid
+

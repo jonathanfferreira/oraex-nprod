@@ -1,0 +1,33 @@
+---
+# =========================================================================
+# 1. Preparação (Setup)
+# -------------------------------------------------------------------------
+# O DBCA (Database Configuration Assistant) precisa de um "Response File"
+# para saber o nome do banco, memória, locations, senhas, etc.
+# Geramos esse arquivo dinamicamente via Template Jinja2.
+# =========================================================================
+- name: Generate DBCA Response File (Template)
+  template:
+    src: "templates/db_create.j2"
+    dest: "{{ rsp_file_dest }}"
+    mode: '0600' # Sensível: contém senhas (mesmo que temporárias)
+
+    # =========================================================================
+    # 2. Criação do Banco (Database Creation)
+    # -------------------------------------------------------------------------
+    # Este é o passo mais lento (10-20 min).
+    # O comando cria:
+    # 1. Instance (Processos + Memória)
+    # 2. Controlfiles, Redologs, Datafiles no ASM (+DATA)
+    # 3. PDB (Pluggable Database) padrão
+    # =========================================================================
+    - name: Run DBCA (Silent)
+      shell: |
+        {{ oracle_home }}/bin/dbca -silent -createDatabase -responseFile {{ rsp_file_dest }}
+      register: dbca_setup
+      # RC 0 = Sucesso
+      failed_when: dbca_setup.rc != 0
+      
+    - name: Show DBCA Output
+      debug:
+        msg: "{{ dbca_setup.stdout_lines }}"

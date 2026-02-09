@@ -1,0 +1,30 @@
+---
+- name: Debug ASMCA Failure
+  hosts: standalone
+  tasks:
+    - name: Find Latest ASMCA Log
+      shell: ls -t /u01/app/grid/cfgtoollogs/asmca/asmca-*.log | head -n 1
+      register: log_file
+
+    - name: Read Last 50 Lines of Log
+      shell: tail -n 50 {{ log_file.stdout }}
+      register: log_content
+      ignore_errors: yes
+
+    - name: Check ASM Resource Status
+      become: yes
+      shell: /u01/app/19.0.0/grid/bin/crsctl stat res ora.asm -t
+      register: asm_res
+      ignore_errors: yes
+
+    - name: Check for Running ASM Processes
+      shell: ps -ef | grep asm
+      register: ps_out
+
+    - name: Debug Output
+      debug:
+        msg:
+          - "Log File: {{ log_file.stdout }}"
+          - "Log Content: {{ log_content.stdout_lines }}"
+          - "Resource Status: {{ asm_res.stdout_lines }}"
+          - "Process List: {{ ps_out.stdout_lines }}"

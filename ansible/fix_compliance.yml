@@ -1,0 +1,97 @@
+# =============================================================================
+# Playbook: Enforce Getnet DBA Book Compliance
+# -----------------------------------------------------------------------------
+# Objetivo: Aplicar os padrões de segurança e governança exigidos pela Getnet.
+# Padrão: "Vanilla" (Oracle Default) -> "Hardened" (Getnet Standard).
+#
+# Itens Cobertos:
+# 1. Recyclebin = OFF (Evita lixo no storage).
+# 2. Force Logging = ON (Garante integridade no Data Guard).
+# 3. Environment Profile (.db_profile_orasid) = Configurado.
+# =============================================================================
+- name: Enforce Getnet DBA Book Compliance
+  hosts: all
+  become: yes
+  become_user: oracle
+  
+  # Definimos variáveis globais para não depender apenas do .bash_profile
+  environment:
+    ORACLE_SID: oraex
+    ORACLE_HOME: /u01/app/oracle/product/19.0.0/dbhome_1
+    PATH: "/u01/app/oracle/product/19.0.0/dbhome_1/bin:/usr/local/bin:/usr/bin:/bin"
+
+  tasks:
+    # =========================================================================
+    # ITEM 1: Parâmetros de Banco (Database Parameters)
+    # -------------------------------------------------------------------------
+    # Alterações que exigem conexão no banco (SQL*Plus).
+    # Usamos o módulo 'shell' com 'heredoc' (<<EOF) para facilitar execução SQL.
+    # =========================================================================
+    - name: Disable Recyclebin (Item 9)
+      shell: |
+        sqlplus -s / as sysdba <<EOF
+        ALTER SYSTEM SET recyclebin=OFF SCOPE=SPFILE;
+        EXIT;
+        EOF
+      register: binsql
+      # Ignorar erro se já estiver setado? Não, queremos garantir.
+
+    - name: Enable Force Logging (Item 9)
+      shell: |
+        sqlplus -s / as sysdba <<EOF
+        ALTER DATABASE FORCE LOGGING;
+        EXIT;
+        EOF
+      register: logsql
+
+    - name: Check Compliance Status
+      shell: |
+        sqlplus -s / as sysdba <<EOF
+        set pages 0 feedback off
+        select 'Recyclebin: ' || value from v\$parameter where name='recyclebin';
+        select 'Force Logging: ' || force_logging from v\$database;
+        EXIT;
+        EOF
+      register: status_out
+
+    - name: Show Compliance Report
+      debug:
+        msg: "{{ status_out.stdout_lines }}"
+
+    # =========================================================================
+    # ITEM 2: Perfis de Ambiente (Environment Profiles)
+    # -------------------------------------------------------------------------
+    # A Getnet exige que as variáveis (ORACLE_HOME, SID) fiquem em um arquivo
+    # separado (.db_profile_*) para facilitar manutenção e troca de homes.
+    # =========================================================================
+    - name: Create .db_profile_oraex (Getnet Standard)
+      copy:
+        dest: /home/oracle/.db_profile_oraex
+        owner: oracle
+        group: oinstall
+        mode: '0755'
+        content: |
+          # Profile Oracle - Padrão Getnet/Oraex
+          export ORACLE_BASE=/u01/app/oracle
+          export ORACLE_HOME=/u01/app/oracle/product/19.0.0/dbhome_1
+          export ORACLE_SID=oraex
+          export PATH=$ORACLE_HOME/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin
+          export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+          export CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib
+          export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+          
+          # Aliases Padrão
+          alias sql='sqlplus / as sysdba'
+          alias dbs='cd $ORACLE_HOME/dbs'
+          alias oh='cd $ORACLE_HOME'
+          alias tns='cd $ORACLE_HOME/network/admin'
+          
+          echo "Oracle Environment set to: $ORACLE_SID"
+
+    # Garantimos que o login do usuário carregue esse profile automaticamente.
+    - name: Ensure .bash_profile sources the DB Profile
+      lineinfile:
+        path: /home/oracle/.bash_profile
+        line: '. /home/oracle/.db_profile_oraex'
+        state: present
+        insertafter: EOF

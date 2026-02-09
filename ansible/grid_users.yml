@@ -1,0 +1,82 @@
+---
+- name: Configure Grid and Oracle Users (Role Separation)
+  hosts: "{{ target_hosts | default('rac_nodes') }}"
+  become: yes
+  vars:
+    # Groups Configuration (Consistent IDs for RAC)
+    groups_config:
+      - { name: 'oinstall', gid: 54321 }
+      - { name: 'dba',      gid: 54322 }
+      - { name: 'oper',     gid: 54323 }
+      - { name: 'backupdba', gid: 54324 }
+      - { name: 'dgdba',    gid: 54325 }
+      - { name: 'kmdba',    gid: 54326 }
+      - { name: 'asmdba',   gid: 54327 }
+      - { name: 'asmoper',  gid: 54328 }
+      - { name: 'asmadmin', gid: 54329 }
+      - { name: 'racdba',   gid: 54330 }
+
+    # Directories
+    oracle_base: "/u01/app/oracle"
+    grid_base: "/u01/app/grid"
+    grid_home: "/u01/app/19.0.0/grid"
+    ora_inventory: "/u01/app/oraInventory"
+
+  tasks:
+    - name: Ensure Groups exist with correct GIDs
+      group:
+        name: "{{ item.name }}"
+        gid: "{{ item.gid }}"
+        state: present
+      loop: "{{ groups_config }}"
+
+    - name: Create or Modify 'grid' User
+      user:
+        name: grid
+        uid: 54322
+        group: oinstall
+        groups: asmadmin,asmdba,asmoper,dba
+        append: yes
+        home: /home/grid
+        shell: /bin/bash
+        comment: "Oracle Grid Infrastructure Owner"
+
+    - name: Create or Modify 'oracle' User
+      user:
+        name: oracle
+        uid: 54321
+        group: oinstall
+        groups: dba,oper,backupdba,dgdba,kmdba,racdba,asmdba
+        append: yes
+        home: /home/oracle
+        shell: /bin/bash
+        comment: "Oracle Database Owner"
+
+    - name: Create Oracle Directories
+      file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: oinstall
+        mode: '0775'
+      loop:
+        - { path: "{{ oracle_base }}", owner: "oracle" }
+        - { path: "{{ grid_base }}", owner: "grid" }
+        - { path: "{{ grid_home }}", owner: "grid" }
+        - { path: "/u01/app/19.0.0", owner: "grid" } # Parent dir
+
+    - name: Create oraInventory Directory
+      file:
+        path: "{{ ora_inventory }}"
+        state: directory
+        owner: grid
+        group: oinstall
+        mode: '0775'
+
+    - name: Set Password for users (Dev/Lab only)
+      user:
+        name: "{{ item }}"
+        password: "{{ 'oracle' | password_hash('sha512') }}"
+      loop:
+        - grid
+        - oracle

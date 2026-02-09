@@ -1,0 +1,33 @@
+# ==============================================================================
+# Variáveis de Ambiente Oracle
+# ==============================================================================
+# Gerado automaticamente pelo Ansible - Role oracle-install
+# ==============================================================================
+
+# Oracle Base
+export ORACLE_BASE={{ oracle_base | default('/u01/app/oracle') }}
+
+# Oracle Home
+export ORACLE_HOME={{ oracle_home | default('/u01/app/oracle/product/19.0.0/dbhome_1') }}
+
+# Oracle SID
+export ORACLE_SID={{ oracle_sid | default('orcl') }}
+
+# Oracle Inventory
+export ORACLE_INVENTORY={{ oracle_inventory_dir | default('/u01/app/oraInventory') }}
+
+# PATH
+export PATH=$ORACLE_HOME/bin:$PATH
+
+# LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+
+# TNS Admin
+export TNS_ADMIN=$ORACLE_HOME/network/admin
+
+# NLS
+export NLS_LANG={{ nls_lang | default('AMERICAN_AMERICA.UTF8') }}
+
+# Aliases úteis
+alias sqlplus='rlwrap sqlplus'
+alias rman='rlwrap rman'

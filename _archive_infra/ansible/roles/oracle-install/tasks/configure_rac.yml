@@ -1,0 +1,45 @@
+---
+# ==============================================================================
+# Configuração Oracle RAC
+# ==============================================================================
+# Configuração específica para ambiente RAC
+# ==============================================================================
+
+- name: Verificar se é ambiente RAC
+  debug:
+    msg: "Configurando RAC para cluster {{ cluster_name | default('N/A') }}"
+  tags: [rac, always]
+
+- name: Configurar Grid Infrastructure (ASM)
+  include_tasks: configure_asm.yml
+  when: configure_asm | default(true)
+  tags: [rac, asm]
+
+- name: Configurar Clusterware
+  include_tasks: configure_clusterware.yml
+  when: configure_clusterware | default(true)
+  tags: [rac, clusterware]
+
+- name: Configurar TNS para RAC
+  template:
+    src: tnsnames_rac.ora.j2
+    dest: "{{ oracle_home }}/network/admin/tnsnames.ora"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0644'
+  tags: [rac, networking]
+
+- name: Configurar listener para RAC
+  template:
+    src: listener_rac.ora.j2
+    dest: "{{ oracle_home }}/network/admin/listener.ora"
+    owner: "{{ oracle_user }}"
+    group: "{{ oracle_group }}"
+    mode: '0644'
+  tags: [rac, networking]
+
+- name: Reiniciar listener
+  command: "{{ oracle_home }}/bin/lsnrctl reload"
+  become_user: "{{ oracle_user }}"
+  when: restart_listener | default(true)
+  tags: [rac, networking]

@@ -1,0 +1,103 @@
+# ==============================================================================
+# Docker Compose - Ambiente de Testes Local
+# ==============================================================================
+# Cria containers para testar automações sem infraestrutura real
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # Oracle Database (simulado com Oracle XE ou container genérico)
+  oracle-test:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oraex-oracle-test
+    environment:
+      - ORACLE_PWD=Oracle123!
+      - ORACLE_CHARACTERSET=AL32UTF8
+    ports:
+      - "1521:1521"
+      - "5500:5500"  # EM Express
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    networks:
+      - oraex-test
+    healthcheck:
+      test: ["CMD-SHELL", "sqlplus -S sys/Oracle123!@localhost:1521/XE as sysdba <<< 'SELECT 1 FROM DUAL;' | grep -q 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # MongoDB para testes
+  mongodb-test:
+    image: mongo:6.0
+    container_name: oraex-mongodb-test
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - oraex-test
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL (para testes futuros)
+  postgres-test:
+    image: postgres:15
+    container_name: oraex-postgres-test
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=testdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - oraex-test
+
+  # Prometheus (para testes de métricas)
+  prometheus-test:
+    image: prom/prometheus:latest
+    container_name: oraex-prometheus-test
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./tests/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - oraex-test
+
+  # Grafana (opcional - para visualização)
+  grafana-test:
+    image: grafana/grafana:latest
+    container_name: oraex-grafana-test
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - oraex-test
+    depends_on:
+      - prometheus-test
+
+volumes:
+  oracle-data:
+  mongodb-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  oraex-test:
+    driver: bridge

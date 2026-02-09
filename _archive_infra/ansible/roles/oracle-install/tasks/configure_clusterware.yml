@@ -1,0 +1,27 @@
+---
+# ==============================================================================
+# Configuração Oracle Clusterware
+# ==============================================================================
+
+- name: Verificar status do Clusterware
+  command: "{{ grid_home | default('/u01/app/grid/bin') }}/crsctl check cluster"
+  become_user: "{{ grid_user | default('grid') }}"
+  register: cluster_status
+  changed_when: false
+  failed_when: false
+  tags: [clusterware, check]
+
+- name: Exibir status do cluster
+  debug:
+    msg: "Status do cluster: {{ cluster_status.stdout if cluster_status.rc == 0 else 'Erro ao verificar' }}"
+  tags: [clusterware, check]
+
+- name: Configurar recursos do cluster (se necessário)
+  shell: |
+    {{ grid_home | default('/u01/app/grid/bin') }}/crsctl add resource {{ item.name }} \
+      -type {{ item.type }} \
+      -attr "{{ item.attributes }}"
+  become_user: "{{ grid_user | default('grid') }}"
+  loop: "{{ cluster_resources | default([]) }}"
+  when: cluster_resources is defined
+  tags: [clusterware, configure]

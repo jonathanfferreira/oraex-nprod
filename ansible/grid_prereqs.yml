@@ -1,0 +1,66 @@
+---
+- name: Configure Grid Infrastructure Prerequisites (Node 1)
+  hosts: "{{ target_hosts | default('rac_nodes') }}"
+  become: yes
+  tasks:
+    - name: Ensure Oracle Preinstall RPM is installed
+      dnf:
+        name: oracle-database-preinstall-19c
+        state: present
+
+    - name: Configure Lab Storage (Loopback Devices)
+      when: configure_lab_storage | default(false)
+      block:
+        - name: Create storage directory for Loopback Disks
+          file:
+            path: /u01/storage
+            state: directory
+            owner: root
+            group: root
+            mode: '0755'
+
+        - name: Create ASM Disk Files (dd)
+          command: >
+            dd if=/dev/zero of=/u01/storage/{{ item.name }}.img bs=1M count={{ item.size }}
+          args:
+            creates: "/u01/storage/{{ item.name }}.img"
+          loop:
+            - { name: 'asm_ocr', size: 10240 }  # 10GB
+            - { name: 'asm_data', size: 20480 } # 20GB
+            - { name: 'asm_fra', size: 10240 }  # 10GB
+
+        - name: Generate Loopback Devices (losetup)
+          shell: |
+            losetup -fP /u01/storage/{{ item }}.img
+          loop:
+            - asm_ocr
+            - asm_data
+            - asm_fra
+          ignore_errors: yes 
+
+        - name: Persist Loopback Devices (rc.local for now - simple lab fix)
+          blockinfile:
+            path: /etc/rc.d/rc.local
+            create: yes
+            mode: '0755'
+            block: |
+              # Oracle ASM Loopback Devices
+              losetup -f /u01/storage/asm_ocr.img 2>/dev/null || true
+              losetup -f /u01/storage/asm_data.img 2>/dev/null || true
+              losetup -f /u01/storage/asm_fra.img 2>/dev/null || true
+              
+              # Force ownership (hack because udev on loopback varies)
+              chown grid:asmadmin /dev/loop*
+              chmod 660 /dev/loop*
+
+        - name: Enable rc.local
+          systemd:
+            name: rc-local
+            enabled: yes
+            state: started
+
+        - name: Set permissions on Loopback Devices (Immediate)
+          shell: |
+            chown grid:asmadmin /dev/loop*
+            chmod 660 /dev/loop*
+

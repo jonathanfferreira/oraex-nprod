@@ -1,0 +1,89 @@
+---
+# =======================================================================================
+# MASTER PLAYBOOK: ORACLE END-TO-END IMPLEMENTATION (ORCHESTRATOR)
+# ---------------------------------------------------------------------------------------
+# Descrição:
+#   Este é o "Maestro" da automação. Ele não executa tarefas diretamente,
+#   mas chama (importa) outros playbooks na ordem exata necessária para
+#   construir o ambiente do zero.
+#
+# Objetivo Educativo:
+#   Manter este arquivo limpo e focado no FLUXO (Workflow). Os detalhes
+#   técnicos ficam nos playbooks específicos (modularização).
+#
+# Uso: 
+#   ansible-playbook -i inventory/hosts.ini site.yml --limit standalone
+# =======================================================================================
+
+# FASE 2: OS Bootstrap
+# O que faz: Prepara o Linux (Kernel, Pacotes, Usuários, Diretórios).
+# Por que: O Oracle exige dezenas de pré-requisitos antes de sequer tentar instalar.
+- import_playbook: ansible/os_bootstrap.yml
+
+# FASE 3: Grid Infrastructure (Clusterware/ASM)
+# O que faz: Instala a camada de Cluster e Gerenciamento de Storage (ASM).
+# Por que: Em ambientes Enterprise, não gravamos dados direto no Filesystem, usamos ASM.
+- import_playbook: ansible/grid_install.yml
+
+# FASE 3.1: Configuração do ASM (Diskgroups)
+# =============================================================================
+# ORAEX MASTER PLAYBOOK
+# -----------------------------------------------------------------------------
+# Orquestrador principal para provisionamento de ambientes Oracle Database.
+# Suporta Single Instance e RAC através de Roles modulares.
+# =============================================================================
+- name: ORAEX Infrastructure Provisioning
+  hosts: all
+  become: yes
+  vars:
+    # Definições Globais (podem ser sobrescritas pelo Ansible Tower/Extra Vars)
+    oracle_edition: "EE"
+    oracle_version: "19c"
+    install_grid: true
+    install_db: true
+    configure_db: true
+    
+    # Paths Padrão (Overridable)
+    oracle_base: /u01/app/oracle
+    oracle_home: /u01/app/oracle/product/19.0.0/dbhome_1
+    grid_home: /u01/app/19.0.0/grid
+
+  tasks:
+    # -------------------------------------------------------------------------
+    # 1. Bootstrap do Sistema Operacional (Common Layer)
+    # -------------------------------------------------------------------------
+    - name: Apply OS Bootstrap Role
+      include_role:
+        name: oraex_os_bootstrap
+
+    # -------------------------------------------------------------------------
+    # 2. Grid Infrastructure (Cluster Layer)
+    # -------------------------------------------------------------------------
+    - name: Apply Grid Install Role
+      include_role:
+        name: oraex_grid_install
+      when: install_grid | bool
+
+    # -------------------------------------------------------------------------
+    # 3. Database Software (Binaries Layer)
+    # -------------------------------------------------------------------------
+    - name: Apply DB Install Role
+      include_role:
+        name: oraex_db_install
+      when: install_db | bool
+
+    # -------------------------------------------------------------------------
+    # 4. Database Creation (Instance Layer)
+    # -------------------------------------------------------------------------
+    - name: Apply DB Configuration Role
+      include_role:
+        name: oraex_db_config
+      when: configure_db | bool
+
+# FASE 4.3: Compliance & Pós-Instalação (Getnet Standards)
+# O que faz: Aplica regras de ouro (Recyclebin Off, Profiles).
+# Por que: Um banco "default" não atende aos padrões de governança/segurança corporativos.
+- import_playbook: ansible/fix_compliance.yml
+
+# FASE 6: Verificação de Qualidade (QA) (Futuro)
+# - import_playbook: ansible/verify_quality.yml

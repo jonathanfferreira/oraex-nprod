@@ -1,0 +1,41 @@
+---
+# ==============================================================================
+# Playbook: Integração Terraform → Ansible
+# ==============================================================================
+# Este playbook é executado APÓS o Terraform criar os recursos.
+# Responsabilidade: Configuração pós-provisionamento
+# ==============================================================================
+
+- name: Integração Terraform + Ansible - Provisionamento Completo
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    terraform_inventory_dir: "{{ playbook_dir }}/../inventory/terraform-inventory"
+    
+  tasks:
+    - name: Verificar se inventory do Terraform existe
+      stat:
+        path: "{{ terraform_inventory_dir }}"
+      register: inv_dir
+      
+    - name: Listar inventories disponíveis
+      find:
+        paths: "{{ terraform_inventory_dir }}"
+        patterns: "*.ini"
+      register: inventory_files
+      when: inv_dir.stat.exists
+      
+    - name: Exibir inventories encontrados
+      debug:
+        msg: "Inventories encontrados: {{ inventory_files.files | map(attribute='path') | list }}"
+      when: inventory_files.files | length > 0
+      
+    - name: Executar provisionamento para cada cluster
+      include_tasks: provision-cluster.yml
+      loop: "{{ inventory_files.files | default([]) }}"
+      loop_control:
+        loop_var: inventory_file
+      vars:
+        cluster_inventory: "{{ inventory_file.path }}"
+      when: inventory_files.files | length > 0

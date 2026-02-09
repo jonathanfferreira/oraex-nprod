@@ -1,0 +1,39 @@
+---
+# ==============================================================================
+# Configuração ASM (Automatic Storage Management)
+# ==============================================================================
+
+- name: Verificar discos ASM disponíveis
+  shell: |
+    lsblk -o NAME,SIZE,TYPE | grep disk
+  register: asm_disks
+  changed_when: false
+  tags: [asm, check]
+
+- name: Exibir discos disponíveis para ASM
+  debug:
+    msg: "Discos disponíveis: {{ asm_disks.stdout_lines }}"
+  tags: [asm, check]
+
+- name: Criar diskgroups ASM (DATA)
+  shell: |
+    {{ grid_home | default('/u01/app/grid/bin') }}/asmca -silent \
+      -createDiskGroup \
+      -diskGroupName DATA \
+      -diskList "{{ asm_disks_list | default('ORCL:DISK1,ORCL:DISK2') }}" \
+      -redundancy EXTERNAL
+  become_user: "{{ grid_user | default('grid') }}"
+  when: create_asm_diskgroups | default(false)
+  tags: [asm, create]
+  # Nota: Ajustar diskList conforme discos reais
+
+- name: Criar diskgroups ASM (FRA)
+  shell: |
+    {{ grid_home | default('/u01/app/grid/bin') }}/asmca -silent \
+      -createDiskGroup \
+      -diskGroupName FRA \
+      -diskList "{{ asm_fra_disks | default('ORCL:DISK3') }}" \
+      -redundancy EXTERNAL
+  become_user: "{{ grid_user | default('grid') }}"
+  when: create_asm_diskgroups | default(false) and asm_fra_disks is defined
+  tags: [asm, create]

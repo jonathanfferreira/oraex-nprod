@@ -1,0 +1,66 @@
+---
+# ==============================================================================
+# Validação da Instalação Oracle
+# ==============================================================================
+
+- name: Verificar versão Oracle instalada
+  shell: "{{ oracle_home }}/bin/sqlplus -S / as sysdba <<< 'SELECT banner FROM v\\$version WHERE rownum=1;' | tail -1"
+  become_user: "{{ oracle_user }}"
+  register: oracle_version
+  changed_when: false
+  failed_when: false
+  tags: [validate, version]
+
+- name: Exibir versão Oracle
+  debug:
+    msg: "Versão Oracle: {{ oracle_version.stdout | default('Não disponível') }}"
+  tags: [validate, version]
+
+- name: Verificar instâncias em execução
+  shell: "{{ oracle_home }}/bin/sqlplus -S / as sysdba <<< 'SELECT instance_name, status FROM v\\$instance;'"
+  become_user: "{{ oracle_user }}"
+  register: instance_status
+  changed_when: false
+  failed_when: false
+  tags: [validate, instance]
+
+- name: Exibir status das instâncias
+  debug:
+    msg: "Status das instâncias: {{ instance_status.stdout_lines }}"
+  tags: [validate, instance]
+
+- name: Verificar tablespaces críticos
+  shell: "{{ oracle_home }}/bin/sqlplus -S / as sysdba <<< 'SELECT tablespace_name, status FROM dba_tablespaces WHERE status != ''ONLINE'';'"
+  become_user: "{{ oracle_user }}"
+  register: tablespace_check
+  changed_when: false
+  failed_when: false
+  tags: [validate, tablespaces]
+
+- name: Validar tablespaces
+  fail:
+    msg: "Tablespaces offline encontrados: {{ tablespace_check.stdout }}"
+  when: tablespace_check.stdout | length > 0 and 'no rows selected' not in tablespace_check.stdout
+  tags: [validate, tablespaces]
+
+- name: Verificar listener
+  command: "{{ oracle_home }}/bin/lsnrctl status"
+  become_user: "{{ oracle_user }}"
+  register: listener_status
+  changed_when: false
+  failed_when: false
+  tags: [validate, listener]
+
+- name: Exibir status do listener
+  debug:
+    msg: "Listener: {{ 'RUNNING' if listener_status.rc == 0 else 'STOPPED' }}"
+  tags: [validate, listener]
+
+- name: Resumo da validação
+  debug:
+    msg: |
+      ✅ Validação da instalação Oracle concluída!
+      Versão: {{ oracle_version.stdout | default('N/A') }}
+      Instâncias: {{ instance_status.stdout_lines | length if instance_status.stdout_lines else 0 }}
+      Listener: {{ 'RUNNING' if listener_status.rc == 0 else 'STOPPED' }}
+  tags: [validate, summary]

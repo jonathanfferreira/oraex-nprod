@@ -1,0 +1,53 @@
+# =============================================================================
+# DBCA Response File Template (Oracle Database 19c)
+# -----------------------------------------------------------------------------
+# Este arquivo é lido pelo DBCA (Database Configuration Assistant) para criar
+# o banco sem interação humana (Silent Mode).
+# Link com Ansible: As variáveis {{ variavel }} são preenchidas pelo Jinja2.
+# =============================================================================
+
+# Versão do Arquivo de Resposta
+responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v19.0.0
+
+# Identificação do Banco (Global Database Name e SID)
+gdbName=oraex.local
+sid=oraex
+
+# Tipo de Configuração: SI (Single Instance) ou RAC
+databaseConfigType=SI
+templateName=General_Purpose.dbc
+
+# Senhas Administrativas (SYS, SYSTEM)
+# Em produção, usar Vaults. No Lab, hardcoded.
+sysPassword={{ 'W3lc0m3_123#' }}
+systemPassword={{ 'W3lc0m3_123#' }}
+emConfiguration=NONE
+dbsnmpPassword={{ 'W3lc0m3_123#' }}
+
+# Configuração de Storage (ASM)
+# O banco vai morar dentro do Diskgroup +DATA (criado na Fase Grid)
+storageType=ASM
+diskGroupName=+DATA
+asmsnmpPassword={{ 'W3lc0m3_123#' }}
+recoveryGroupName=+DATA # Fast Recovery Area (FRA)
+
+# Configuração de Character Set (Padrão Mundial Moderno: UTF8)
+characterSet=AL32UTF8
+nationalCharacterSet=AL16UTF16
+registerWithDirService=false
+listeners=LISTENER
+
+# Configuração de Memória (SGA + PGA)
+# 40% da RAM da VM, Gerenciamento Manual (ASMM) vs Automático (AMM)
+# 'automaticMemoryManagement=false' é preferido para servidores grandes.
+memoryPercentage=40
+databaseType=MULTIPURPOSE
+automaticMemoryManagement=false
+totalMemory=2048
+
+# Configuração Multitenant (CDB/PDB)
+# O Oracle 19c incentiva a arquitetura de Containers.
+createAsContainerDatabase=true
+numberOfPDBs=1
+pdbName=pdb1
+pdbAdminPassword={{ 'W3lc0m3_123#' }}

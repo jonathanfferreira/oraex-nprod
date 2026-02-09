@@ -1,0 +1,67 @@
+---
+- name: Nuke and Rebuild ASM (Last Resort)
+  hosts: standalone
+  become: yes
+  vars:
+    grid_home: /u01/app/19.0.0/grid
+    sys_asm_pass: "W3lc0m3_123#"
+    asm_snmp_pass: "W3lc0m3_123#"
+
+  tasks:
+    - name: Ensure HAS is Online (for SRVCTL)
+      shell: /u01/app/19.0.0/grid/bin/crsctl start has
+      ignore_errors: yes
+
+    - name: Force Stop ASM
+      become_user: grid
+      shell: "{{ grid_home }}/bin/srvctl stop asm -f"
+      ignore_errors: yes
+
+    - name: Force Remove ASM Resource (Purge Config)
+      become_user: grid
+      shell: "{{ grid_home }}/bin/srvctl remove asm -f"
+      ignore_errors: yes
+
+    - name: Remove Leftover Parameter Files
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ grid_home }}/dbs/spfile+ASM.ora"
+        - "{{ grid_home }}/dbs/init+ASM.ora"
+        - "{{ grid_home }}/dbs/ab_+ASM.dat"
+        - "{{ grid_home }}/dbs/hc_+ASM.dat"
+
+    - name: Wipe All Loopback Disks (Deep Clean)
+      shell: dd if=/dev/zero of=/dev/loop{{ item }} bs=1M count=50 conv=notrunc
+      loop: [0, 1, 2, 3, 4, 5]
+      ignore_errors: yes
+
+    - name: Re-Run ASMCA (Fresh Install Style) on 20GB Disk
+      become_user: grid
+      shell: |
+        {{ grid_home }}/bin/asmca -silent -configureASM \
+        -sysAsmPassword '{{ sys_asm_pass }}' \
+        -asmsnmpPassword '{{ asm_snmp_pass }}' \
+        -diskString '/dev/loop1' \
+        -diskGroupName DATA \
+        -disk '/dev/loop1' \
+        -redundancy EXTERNAL \
+        -au_size 4
+      register: asmca_out
+
+    - name: Show ASMCA Output
+      debug:
+        msg: "{{ asmca_out.stdout_lines }}"
+
+    - name: Verify Final Status
+      become_user: grid
+      shell: |
+        {{ grid_home }}/bin/crsctl stat res ora.asm -t
+        . /home/grid/.bash_profile
+        {{ grid_home }}/bin/asmcmd lsdg
+      register: final_status
+      
+    - name: Show Final Status
+      debug:
+        msg: "{{ final_status.stdout_lines }}"

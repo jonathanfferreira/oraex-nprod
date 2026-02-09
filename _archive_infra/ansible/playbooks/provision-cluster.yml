@@ -1,0 +1,61 @@
+---
+# ==============================================================================
+# Playbook: Provisionar Cluster Individual
+# ==============================================================================
+# Sub-playbook chamado pelo integrate-terraform.yml
+# ==============================================================================
+
+- name: Carregar inventory dinâmico do Terraform
+  add_host:
+    name: "{{ item }}"
+    groups: "oracle_rac_dynamic"
+    ansible_host: "{{ hostvars[item]['ansible_host'] | default('') }}"
+  loop: "{{ groups['oracle_rac_nodes'] | default([]) }}"
+  when: groups['oracle_rac_nodes'] is defined
+
+- name: Provisionar nós Oracle RAC
+  hosts: oracle_rac_dynamic
+  become: yes
+  become_user: root
+  
+  pre_tasks:
+    - name: Exibir informações do nó
+      debug:
+        msg: |
+          Provisionando nó: {{ inventory_hostname }}
+          IP: {{ ansible_host }}
+          Cluster: {{ cluster_name | default('N/A') }}
+          
+  roles:
+    - role: oraex_base
+      tags: [base, always]
+    
+    - role: oracle-install
+      when: install_oracle | default(false)
+      tags: [oracle-install]
+      
+    - role: oraex_monitoring
+      when: deploy_monitoring | default(true)
+      tags: [monitoring]
+      
+    - role: oraex_healthcheck
+      when: deploy_healthcheck | default(true)
+      tags: [healthcheck]
+      
+    - role: oraex_housekeeper
+      when: deploy_housekeeper | default(true)
+      tags: [housekeeper]
+      
+    - role: oraex_backup
+      when: deploy_backup | default(true)
+      tags: [backup]
+      
+  post_tasks:
+    - name: Validar provisionamento
+      command: "{{ python_executable }} -c 'import cx_Oracle; print(\"OK\")'"
+      register: python_check
+      changed_when: false
+      
+    - name: Exibir resultado da validação
+      debug:
+        msg: "✅ Nó {{ inventory_hostname }} provisionado com sucesso!"

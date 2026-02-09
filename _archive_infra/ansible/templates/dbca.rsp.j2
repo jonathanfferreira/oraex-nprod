@@ -1,0 +1,22 @@
+responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v12.2.0
+gdbName={{ oracle_sid }}
+sid={{ oracle_sid }}
+databaseConfigType=SI
+RA=false
+createAsContainerDatabase=true
+pdbName={{ pdb_name }}
+pdbAdminPassword={{ sys_password }}
+sysPassword={{ sys_password }}
+systemPassword={{ sys_password }}
+emConfiguration=NONE
+storageType=FS
+datafileDestination=/u02/oracle/oradata
+recoveryAreaDestination=/u02/oracle/fast_recovery_area
+memoryPercentage=40
+databaseType=MULTIPURPOSE
+characterSet=AL32UTF8
+nationalCharacterSet=AL16UTF16
+initParams=open_cursors=300,processes=300
+sampleSchema=false
+automaticMemoryManagement=false
+totalMemory=2048

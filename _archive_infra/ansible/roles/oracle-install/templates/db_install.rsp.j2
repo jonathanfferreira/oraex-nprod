@@ -1,0 +1,69 @@
+# ==============================================================================
+# Response File para Instalação Oracle 19c (Silent Mode)
+# ==============================================================================
+# Gerado automaticamente pelo Ansible - Role oracle-install
+# ==============================================================================
+
+oracle.install.responseFileVersion=/oracle/install/rspfmt_dbinstall_response_schema_v19.0.0
+
+# Opções de instalação
+oracle.install.option=INSTALL_DB_SWONLY
+
+# Localização
+ORACLE_HOSTNAME={{ ansible_hostname }}
+UNIX_GROUP_NAME={{ oracle_group }}
+
+# Inventário
+INVENTORY_LOCATION={{ oracle_inventory_dir | default('/u01/app/oraInventory') }}
+
+# Seleção de idioma
+SELECTED_LANGUAGES={{ oracle_languages | default('en') }}
+
+# Oracle Home
+ORACLE_HOME={{ oracle_home | default('/u01/app/oracle/product/19.0.0/dbhome_1') }}
+ORACLE_BASE={{ oracle_base | default('/u01/app/oracle') }}
+
+# Opções de instalação
+oracle.install.db.InstallEdition={{ oracle_edition | default('EE') }}
+
+# Configuração de segurança
+oracle.install.db.OSDBA_GROUP={{ dba_group }}
+oracle.install.db.OSOPER_GROUP={{ oper_group | default('oper') }}
+oracle.install.db.OSBACKUPDBA_GROUP={{ backup_dba_group | default('backupdba') }}
+oracle.install.db.OSDGDBA_GROUP={{ dg_dba_group | default('dgdba') }}
+oracle.install.db.OSKMDBA_GROUP={{ km_dba_group | default('kmdba') }}
+
+# Configurações de root
+oracle.install.db.rootconfig.executeRootScript=false
+
+# Configurações de upgrade
+oracle.install.db.UpgradeSource.OHI_LOCATION=
+oracle.install.db.UpgradeSource.OHI_ORACLE_HOME_NAME=
+
+# Componentes opcionais
+oracle.install.db.optionalComponents=
+
+# Configurações de configuração
+oracle.install.db.config.starterdb.type={{ db_type | default('GENERAL_PURPOSE') }}
+oracle.install.db.config.starterdb.globalDBName={{ global_db_name | default('orcl') }}
+oracle.install.db.config.starterdb.SID={{ oracle_sid | default('orcl') }}
+
+# Configurações de memória
+oracle.install.db.config.starterdb.memoryOption={{ memory_option | default('true') }}
+oracle.install.db.config.starterdb.memoryLimit={{ memory_limit | default('2048') }}
+
+# Configurações de caracteres
+oracle.install.db.config.starterdb.characterSet={{ character_set | default('AL32UTF8') }}
+
+# Configurações de segurança
+oracle.install.db.config.starterdb.password.ALL={{ oracle_password | default('Oracle123!') }}
+
+# Configurações de storage
+oracle.install.db.config.starterdb.storageType={{ storage_type | default('FILE_SYSTEM_STORAGE') }}
+
+# Configurações de localização
+oracle.install.db.config.starterdb.fileSystemStorage.dataLocation={{ data_location | default('/u02/oracle/oradata') }}
+oracle.install.db.config.starterdb.fileSystemStorage.recoveryLocation={{ recovery_location | default('/u02/oracle/fast_recovery_area') }}
+
+# Configurações de autostart
+oracle.install.db.config.starterdb.automatedBackup.enable={{ automated_backup | default('false') }}

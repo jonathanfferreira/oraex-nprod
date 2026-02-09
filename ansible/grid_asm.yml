@@ -1,0 +1,47 @@
+---
+- name: Configure ASM Disk Groups
+  hosts: "{{ target_hosts | default('rac_nodes') }}"
+  become: yes
+  become_user: grid
+  vars:
+    grid_home: /u01/app/19.0.0/grid
+  
+  tasks:
+    - name: Check ASM Instance Status
+      shell: "{{ grid_home }}/bin/srvctl status asm"
+      register: asm_status
+      changed_when: false
+
+    - name: Create +DATA Disk Group
+      shell: |
+        {{ grid_home }}/bin/asmca -silent -createDiskGroup \
+        -diskGroupName DATA \
+        -diskList /dev/loop1 \
+        -redundancy EXTERNAL \
+        -au_size 4
+      register: create_data
+      failed_when: 
+        - create_data.rc != 0
+        - "'DiskGroup DATA already exists' not in create_data.stdout"
+      changed_when: "'DiskGroup DATA created successfully' in create_data.stdout"
+
+    - name: Create +FRA Disk Group
+      shell: |
+        {{ grid_home }}/bin/asmca -silent -createDiskGroup \
+        -diskGroupName FRA \
+        -diskList /dev/loop2 \
+        -redundancy EXTERNAL \
+        -au_size 4
+      register: create_fra
+      failed_when: 
+        - create_fra.rc != 0
+        - "'DiskGroup FRA already exists' not in create_fra.stdout"
+      changed_when: "'DiskGroup FRA created successfully' in create_fra.stdout"
+
+    - name: Verify Disk Groups
+      shell: |
+        source /home/grid/.bash_profile
+        asmcmd lsdg
+      register: lsdg_out
+      
+    - debug: var=lsdg_out.stdout_lines

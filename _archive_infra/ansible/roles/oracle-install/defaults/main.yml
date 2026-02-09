@@ -1,0 +1,66 @@
+---
+# ==============================================================================
+# Defaults - Role oracle-install
+# ==============================================================================
+# Valores padrão para instalação Oracle 19c
+# ==============================================================================
+
+# Usuários e grupos
+oracle_user: oracle
+oracle_group: oinstall
+dba_group: dba
+grid_user: grid
+asmadmin_group: asmadmin
+oper_group: oper
+backup_dba_group: backupdba
+dg_dba_group: dgdba
+km_dba_group: kmdba
+
+# Diretórios
+oracle_base: /u01/app/oracle
+oracle_home: /u01/app/oracle/product/19.0.0/dbhome_1
+grid_base: /u01/app/grid
+grid_home: /u01/app/grid/product/19.0.0/grid
+oracle_inventory_dir: /u01/app/oraInventory
+oracle_patches_dir: /u02/oracle/patches
+
+# Configuração Oracle
+oracle_sid: orcl
+global_db_name: orcl
+service_name: orcl
+oracle_edition: EE  # Enterprise Edition
+oracle_languages: en
+
+# Instalação
+install_oracle: true
+configure_rac: false
+is_rac: false
+configure_asm: false
+create_asm_diskgroups: false
+
+# Configurações de instalação
+oracle_installer_path: /u02/oracle/installer
+oracle_response_dir: /u02/oracle/response
+root_scripts_required: true
+
+# Configurações de banco
+db_type: GENERAL_PURPOSE
+memory_option: true
+memory_limit: 2048  # MB
+character_set: AL32UTF8
+storage_type: FILE_SYSTEM_STORAGE
+data_location: /u02/oracle/oradata
+recovery_location: /u02/oracle/fast_recovery_area
+automated_backup: false
+
+# Segurança
+oracle_password: "{{ vault_oracle_password | default('CHANGE_ME') }}"
+disable_firewall: false
+
+# RAC
+cluster_name: ""
+rac_nodes: []
+restart_listener: true
+
+# NLS
+nls_lang: AMERICAN_AMERICA.UTF8

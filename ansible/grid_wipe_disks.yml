@@ -1,0 +1,12 @@
+---
+- name: Wipe ASM Disk Headers (Zombie Cleanup)
+  hosts: standalone
+  become: yes
+  tasks:
+    - name: Wipe ASM Header from /dev/loop0
+      shell: dd if=/dev/zero of=/dev/loop0 bs=1M count=10
+      register: dd_out
+
+    - name: Show Output
+      debug:
+        msg: "Wiped /dev/loop0: {{ dd_out.stderr }}"

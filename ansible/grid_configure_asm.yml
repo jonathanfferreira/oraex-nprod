@@ -1,0 +1,79 @@
+# =============================================================================
+# Playbook: Configure GRID ASM (Alternative/Manual Method)
+# -----------------------------------------------------------------------------
+# NOTA: Este playbook é um método alternativo/de reparo.
+# Normalmente, o 'gridSetup.sh' (grid_install.yml) já configura o ASM.
+# Use este arquivo se a instalação do Grid falhou em criar o Diskgroup DATA.
+# =============================================================================
+- name: Configure ASM and Disk Group (Repair/Manual)
+  hosts: standalone
+  become: yes
+  vars:
+    grid_home: /u01/app/19.0.0/grid
+    sys_asm_pass: "W3lc0m3_123#"
+    asm_snmp_pass: "W3lc0m3_123#"
+    
+  tasks:
+    # Verifica o status atual antes de tentar qualquer coisa destrutiva.
+    - name: Check if ASM is already configured
+      become_user: grid
+      shell: "{{ grid_home }}/bin/srvctl status asm"
+      register: asm_status
+      ignore_errors: yes
+
+    # =========================================================================
+    # WARNING: OPERAÇÃO DESTRUTIVA (WIPE HEADER)
+    # -------------------------------------------------------------------------
+    # Se o ASM não está rodando, assumimos que os discos podem estar "sujos"
+    # de tentativas anteriores. O comando 'dd' zera o cabeçalho dos discos
+    # para garantir que o ASMCA os veja como "CANDIDATE" (Novos).
+    # =========================================================================
+    - name: Wipe ASM Disk Headers (Flash Neutralizer)
+      # Run as root. Wipe ALL loops to ensure no duplicate headers exist anywhere.
+      shell: dd if=/dev/zero of={{ item }} bs=1M count=10 conv=notrunc
+      loop:
+        - /dev/loop0
+        - /dev/loop1
+        - /dev/loop2
+        - /dev/loop3
+        - /dev/loop4
+        - /dev/loop5
+      when: asm_status.rc != 0
+      ignore_errors: yes
+
+    # =========================================================================
+    # Criação do DiskGroup DATA
+    # -------------------------------------------------------------------------
+    # O ASMCA (ASM Configuration Assistant) é chamado em modo silencioso.
+    # Ele sobe a instância ASM e cria o Diskgroup +DATA no disco /dev/loop0.
+    # =========================================================================
+    - name: Run ASMCA to create ASM and DATA DiskGroup
+      become_user: grid
+      shell: |
+        {{ grid_home }}/bin/asmca -silent -configureASM \
+        -sysAsmPassword '{{ sys_asm_pass }}' \
+        -asmsnmpPassword '{{ asm_snmp_pass }}' \
+        -diskString '/dev/loop0' \
+        -diskGroupName DATA \
+        -disk '/dev/loop0' \
+        -redundancy EXTERNAL \
+        -au_size 4
+      register: asmca_out
+      when: asm_status.rc != 0
+      failed_when: 
+        - asmca_out.rc != 0
+        - '"ASM instance already exists" not in asmca_out.stdout'
+
+    - name: Show ASMCA Output
+      debug:
+        msg: "{{ asmca_out.stdout_lines | default('ASM already configured (Skipped)') }}"
+
+    - name: Verify ASM Resource is Registered
+      become_user: grid
+      shell: "{{ grid_home }}/bin/crsctl stat res ora.asm -t"
+      register: final_check
+      ignore_errors: yes
+
+    - name: Show Final Status
+      debug:
+        var: final_check.stdout_lines

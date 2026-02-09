@@ -1,0 +1,91 @@
+---
+# ==============================================================================
+# Playbook: Provisionamento Vagrant
+# ==============================================================================
+# Provisiona VMs criadas pelo Vagrant
+# ==============================================================================
+
+- name: Provisionar VMs Vagrant
+  hosts: oracle_rac_nodes
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    oracle_user: oracle
+    oracle_group: oinstall
+    dba_group: dba
+  
+  tasks:
+    - name: Exibir informações da VM
+      debug:
+        msg: |
+          Provisionando: {{ inventory_hostname }}
+          IP: {{ ansible_host }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Node Index: {{ node_index | default('N/A') }}
+          Cluster: {{ cluster_name | default('N/A') }}
+    
+    - name: Atualizar sistema
+      yum:
+        name: "*"
+        state: latest
+      when: ansible_pkg_mgr == "yum"
+    
+    - name: Instalar pacotes básicos
+      yum:
+        name:
+          - python3
+          - python3-pip
+          - git
+          - wget
+          - curl
+        state: present
+      when: ansible_pkg_mgr == "yum"
+    
+    - name: Criar grupos Oracle
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - "{{ oracle_group }}"
+        - "{{ dba_group }}"
+    
+    - name: Criar usuário Oracle
+      user:
+        name: "{{ oracle_user }}"
+        group: "{{ oracle_group }}"
+        groups: "{{ dba_group }}"
+        shell: /bin/bash
+        home: /home/{{ oracle_user }}
+        create_home: yes
+    
+    - name: Criar diretórios Oracle
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ oracle_user }}"
+        group: "{{ oracle_group }}"
+        mode: '0755'
+      loop:
+        - /u01/app/oracle
+        - /u02/oracle
+        - /u02/oracle/oradata
+        - /u02/oracle/fast_recovery_area
+    
+    - name: Configurar sudo para usuário oracle
+      lineinfile:
+        path: /etc/sudoers.d/oracle
+        line: "{{ oracle_user }} ALL=(ALL) NOPASSWD: ALL"
+        create: yes
+        mode: '0440'
+        validate: 'visudo -cf %s'
+    
+    - name: Mensagem de sucesso
+      debug:
+        msg: |
+          ✅ VM {{ inventory_hostname }} provisionada com sucesso!
+          
+          Próximos passos:
+          1. Acesse: vagrant ssh {{ inventory_hostname }}
+          2. Instale Oracle 19c (quando estiver pronto)
+          3. Configure RAC (se necessário)

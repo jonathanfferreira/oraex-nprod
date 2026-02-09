@@ -1,0 +1,33 @@
+# ==============================================================================
+# TNSNAMES.ORA para Oracle RAC
+# ==============================================================================
+# Gerado automaticamente pelo Ansible - Role oracle-install
+# ==============================================================================
+
+{{ cluster_name | default('ORACLE_RAC') }} =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (LOAD_BALANCE = ON)
+      (FAILOVER = ON)
+{% for node in rac_nodes | default([]) %}
+      (ADDRESS = (PROTOCOL = TCP)(HOST = {{ node.host }})(PORT = 1521))
+{% endfor %}
+    )
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = {{ service_name | default('orcl') }})
+    )
+  )
+
+# Instâncias individuais
+{% for node in rac_nodes | default([]) %}
+{{ cluster_name | default('ORACLE_RAC') }}{{ loop.index }} =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = {{ node.host }})(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = {{ service_name | default('orcl') }})
+      (INSTANCE_NAME = {{ cluster_name | default('ORACLE_RAC') }}{{ loop.index }})
+    )
+  )
+{% endfor %}

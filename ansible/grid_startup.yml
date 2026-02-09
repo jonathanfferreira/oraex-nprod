@@ -1,0 +1,39 @@
+---
+- name: Start Oracle Grid Infrastructure
+  hosts: standalone
+  become: yes
+  tasks:
+    - name: Start HAS (High Availability Services)
+      shell: /u01/app/19.0.0/grid/bin/crsctl start has
+      register: start_out
+      ignore_errors: yes
+
+    - name: Wait for ASM Instance to Start
+      shell: ps -ef | grep pmon | grep asm
+      register: pmon_check
+      until: pmon_check.rc == 0
+      retries: 10
+      delay: 5
+
+    - name: Check HAS Status
+      shell: /u01/app/19.0.0/grid/bin/crsctl check has
+      register: check_out
+    
+    - name: Mount DATA Diskgroup (if not already)
+      become_user: grid
+      shell: |
+        . /home/grid/.bash_profile
+        /u01/app/19.0.0/grid/bin/asmcmd mount DATA
+      register: mount_out
+      ignore_errors: yes
+      # Ignore error if already mounted (ORA-15032 + ORA-15027)
+      failed_when: 
+        - mount_out.rc != 0
+        - '"ORA-15027" not in mount_out.stdout'
+
+    - name: Show Final Status
+      debug:
+        msg: 
+          - "Start Output: {{ start_out.stdout }}"
+          - "Final Check: {{ check_out.stdout }}"
+          - "ASM Mount: {{ mount_out.stdout_lines }}"
