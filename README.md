@@ -61,9 +61,8 @@ graph TD
 
 ```bash
 oraex-nprod/
-├── infra/                  # The Foundation
-│   ├── Vagrantfile         # Defines VMs, Networks, and Shared Disks
-│   └── ansible/            # Playbooks for OS Config & Oracle Install
+├── Vagrantfile             # Defines VMs, Networks, and Shared Disks
+├── ansible/                # Playbooks for OS Config & Oracle Install
 ├── automacao/              # The "Robot DBA" (Python)
 │   ├── runbooks/           # Logic for remedial actions
 │   │   ├── tablespace_auto_resize.py  # Auto-expand storage safely
@@ -73,7 +72,10 @@ oraex-nprod/
 ├── observability/          # Monitoring Stack
 │   ├── prometheus/         # Scrapers & Rules
 │   └── grafana/            # Dashboards
-└── Dockerfile              # Containerized Automation Runtime
+├── scripts/                # Helper Scripts
+│   └── webhook_receiver.py # Webhook for AlertManager
+├── Dockerfile              # Containerized Automation Runtime
+└── docker-compose.yml      # Docker Orchestration
 ```
 
 ---
@@ -97,23 +99,38 @@ The Ansible roles handle the complex prerequisites of Oracle Grid (cvuqdisk, gro
 
 ## 🚀 Getting Started
 
-To spin up this lab on your local machine:
+You can run this lab in two ways: **Legoland (Docker)** or **Real World (Vagrant)**.
+
+### Option A: Docker (Fast & Light)
+Ideal for testing the Python automation and monitoring stack.
+
+```bash
+# 1. Start everything (App + DB + Monitoring)
+docker-compose up --build -d
+
+# 2. Access
+# Grafana: http://localhost:3000 (admin/admin)
+# Automation Health: http://localhost:5001/health
+```
+
+### Option B: Vagrant (Full Simulation)
+Ideal for testing Infrastructure, Cluster, and OS configs.
 
 ### Prerequisites
 
 - VirtualBox & Vagrant
 - Python 3.9+
-- Ansible
+- Ansible (via WSL)
 
 ### Quick Start
 
 ```bash
 # 1. Provision Infrastructure
-cd infra
 vagrant up
 
 # 2. Deploy Software (Ansible)
-ansible-playbook -i inventory/hosts site.yml
+# NOTE: Windows users must run this inside WSL (Ubuntu)
+ansible-playbook -i ansible/inventory/hosts.ini site.yml
 
 # 3. Start Automation
 pip install -r requirements.txt

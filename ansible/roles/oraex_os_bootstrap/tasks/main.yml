@@ -122,6 +122,7 @@
     mode: "0775"
   loop:
     - { path: "/u01", owner: "root" }
+    - { path: "/u02", owner: "root" }
     - { path: "/u01/app", owner: "grid" } # Base common
     - { path: "/u01/app/oracle", owner: "oracle" }
     - { path: "/u01/app/grid", owner: "grid" }
@@ -129,12 +130,15 @@
     - { path: "/u01/app/oraInventory", owner: "grid" } # Inventário Central
 
 # Garante que ambos usuários possam escrever na base comum
-- name: Change ownership of /u01/app to ensure write access
+- name: Change ownership of /u01/app and /u02 to ensure write access
   file:
-    path: /u01/app
+    path: "{{ item }}"
     owner: grid
     group: oinstall
     mode: "0775"
+  loop:
+    - /u01/app
+    - /u02
 
 # =========================================================================
 # 5. Environment Profiles (bash_profile)

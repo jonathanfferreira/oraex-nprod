@@ -1,0 +1,23 @@
+# Project Restoration: oraex-nprod
+
+- [x] Check environment and workspace <!-- id: 0 -->
+- [x] Install Git <!-- id: 7 -->
+- [x] Clone repository from GitHub <!-- id: 1 -->
+- [x] Analyze project structure and requirements <!-- id: 2 -->
+- [x] Verify Docker installation <!-- id: 9 -->
+- [x] Containerize Python automation <!-- id: 10 -->
+- [x] Create Docker Compose for Observability (Prometheus/Grafana) <!-- id: 11 -->
+- [ ] Test application in Docker <!-- id: 6 -->
+    - [ ] Run existing tests inside container
+    - [ ] Configure Mock Database or Connect to Vagrant
+- [ ] Restore Oracle Database (Vagrant) <!-- id: 12 -->
+    - [x] Install VirtualBox & Vagrant (Manual)
+    - [x] Validate project structure & Update Docs (Architecture Walkthrough) <!-- id: 15 -->
+    - [x] Run `vagrant up` <!-- id: 16 -->
+- [ ] **Phase 1: Standalone Instance (Current Focus)**
+    - [x] Provision with Ansible (Binaries Verified)
+    - [/] Provision with Ansible (Ready for final run - FRA resized)
+    - [ ] Validate Database Connection (SQLPlus)
+- [ ] **Phase 2: High Availability (Data Guard)** <!-- Future -->
+- [ ] **Phase 3: Oracle RAC (Cluster)** <!-- Future -->
+- [ ] Start full stack (App + DB + Monitoring) <!-- id: 14 -->

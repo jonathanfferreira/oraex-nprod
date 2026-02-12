@@ -42,6 +42,32 @@
     state: present
     disable_gpg_check: yes
 
+- name: Create ASM Disk Backing File (20GB) - Lab Only
+  command: fallocate -l 20G /u01/asm_disk_data
+  args:
+    creates: /u01/asm_disk_data
+
+- name: Setup Loop Device (Attach File to /dev/loop1)
+  shell: |
+    losetup /dev/loop1 /u01/asm_disk_data || true
+  register: loop_setup
+
+- name: Create ASM Disk Backing File (FRA 20GB) - Lab Only
+  command: fallocate -l 20G /u02/asm_disk_fra
+  args:
+    creates: /u02/asm_disk_fra
+
+- name: Setup Loop Device (Attach FRA to /dev/loop2)
+  shell: |
+    losetup /dev/loop2 /u02/asm_disk_fra || true
+  register: loop_fra_setup
+
+- name: Set Permissions on ASM Disks (Lab Hack)
+  shell: |
+    chown grid:asmadmin /dev/loop*
+    chmod 660 /dev/loop*
+  ignore_errors: yes
+
 - name: Generate Response File (Template)
   template:
     src: "grid_install.j2"
@@ -86,6 +112,15 @@
   shell: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ rsp_file_dest }} -silent"
   ignore_errors: yes
   when: not grid_installed.stat.exists
+# - name: Configure ASM Disk Group
+#   import_tasks: configure_asm.yml
 
-- name: Configure ASM Disk Group
-  import_tasks: configure_asm.yml
+- name: Create FRA Disk Group (Post-Install)
+  become: yes
+  become_user: "{{ grid_user }}"
+  shell: |
+    {{ grid_home }}/bin/asmca -silent -createDiskGroup -diskGroupName FRA -disk '/dev/loop2' -redundancy EXTERNAL -au_size 4 -sysAsmPassword {{ sys_asm_pass }} -asmsnmpPassword {{ asm_snmp_pass }}
+  register: fra_create
+  failed_when: fra_create.rc != 0 and 'ORA-15018' not in fra_create.stdout
+  ignore_errors: yes
+  when: not grid_installed.stat.exists
