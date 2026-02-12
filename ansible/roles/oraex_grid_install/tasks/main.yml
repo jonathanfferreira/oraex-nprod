@@ -1,0 +1,91 @@
+---
+# =========================================================================
+# 1. Pré-Requisitos Específicos do Grid
+# -------------------------------------------------------------------------
+# 'expect': Usado para automação interativa se necessário.
+# 'cvuqdisk': RPM proprietário da Oracle necessário para o Clusterware ver discos compartilhados.
+# =========================================================================
+- name: Check if Grid is already installed
+  stat:
+    path: "{{ grid_home }}/bin/crsctl"
+  register: grid_installed
+
+- name: Install Unzip and Expect (Prereqs)
+  yum:
+    name:
+      - unzip
+      - expect
+    state: present
+
+    # O Grid Home DEVE ser separado do Oracle Base.
+    # É onde o software do Clusterware fica instalado.
+- name: Create Grid Home Directory
+  file:
+    path: "{{ grid_home }}"
+    state: directory
+    owner: "{{ grid_user }}"
+    group: oinstall
+    mode: "0775"
+
+- name: Unzip Grid Infrastructure Binaries
+  unarchive:
+    src: "{{ grid_zip }}"
+    dest: "{{ grid_home }}"
+    remote_src: yes
+    owner: "{{ grid_user }}"
+    group: oinstall
+    creates: "{{ grid_home }}/gridSetup.sh"
+
+- name: Install cvuqdisk RPM
+  yum:
+    name: "{{ grid_home }}/cv/rpm/cvuqdisk-1.0.10-1.rpm"
+    state: present
+    disable_gpg_check: yes
+
+- name: Generate Response File (Template)
+  template:
+    src: "grid_install.j2"
+    dest: "{{ rsp_file_dest }}"
+    owner: "{{ grid_user }}"
+    group: oinstall
+    mode: "0644"
+
+- name: Run Grid Setup (Silent)
+  become: yes
+  become_user: "{{ grid_user }}"
+  environment:
+    CV_ASSUME_DISTID: OEL7.6
+    TMP: /tmp
+    TEMP: /tmp
+  shell: |
+    {{ grid_home }}/gridSetup.sh -silent -responseFile {{ rsp_file_dest }} -ignorePrereq -waitforcompletion
+  register: grid_setup
+  failed_when: grid_setup.rc not in [0, 6]
+  when: not grid_installed.stat.exists
+
+- name: Run orainstRoot.sh
+  shell: /u01/app/oraInventory/orainstRoot.sh
+  register: orainst_out
+  when: not grid_installed.stat.exists
+
+- name: Run root.sh (This acts as the configuration step)
+  shell: "{{ grid_home }}/root.sh"
+  register: root_out
+  when: not grid_installed.stat.exists
+
+- name: Show Root Execution Output
+  debug:
+    msg:
+      - "{{ orainst_out.stdout_lines }}"
+      - "{{ root_out.stdout_lines }}"
+  when: not grid_installed.stat.exists
+
+- name: Config Tool All (Optional post-root)
+  become: yes
+  become_user: "{{ grid_user }}"
+  shell: "{{ grid_home }}/gridSetup.sh -executeConfigTools -responseFile {{ rsp_file_dest }} -silent"
+  ignore_errors: yes
+  when: not grid_installed.stat.exists
+
+- name: Configure ASM Disk Group
+  import_tasks: configure_asm.yml

@@ -1,0 +1,83 @@
+---
+# =========================================================================
+# 1. Preparação (Setup)
+# -------------------------------------------------------------------------
+# O DBCA precisa de um "Response File" para criar o banco em modo silencioso.
+# =========================================================================
+
+- name: Check if database already exists
+  become_user: "{{ oracle_user }}"
+  shell: |
+    . /home/{{ oracle_user }}/.bash_profile
+    echo "SELECT INSTANCE_NAME FROM V\$INSTANCE;" | {{ oracle_home }}/bin/sqlplus -S / as sysdba
+  register: db_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Generate DBCA Response File (Template)
+  template:
+    src: "db_create.j2"
+    dest: "{{ rsp_file_dest }}"
+    mode: "0600"
+  when: db_check.rc != 0 or 'ORA-' in db_check.stdout
+
+- name: Run DBCA (Silent)
+  become_user: "{{ oracle_user }}"
+  shell: |
+    . /home/{{ oracle_user }}/.bash_profile
+    {{ oracle_home }}/bin/dbca -silent -createDatabase -responseFile {{ rsp_file_dest }}
+  register: dbca_setup
+  failed_when: dbca_setup.rc != 0
+  when: db_check.rc != 0 or 'ORA-' in db_check.stdout
+
+- name: Show DBCA Output
+  debug:
+    msg: "{{ dbca_setup.stdout_lines }}"
+  when: dbca_setup is defined and dbca_setup.stdout_lines is defined
+
+- name: Clean up response file (contains passwords)
+  file:
+    path: "{{ rsp_file_dest }}"
+    state: absent
+
+# =========================================================================
+# 2. Network Configuration (Listener + TNS)
+# =========================================================================
+
+- name: Deploy listener.ora
+  template:
+    src: "listener.ora.j2"
+    dest: "{{ oracle_home }}/network/admin/listener.ora"
+    owner: "{{ oracle_user }}"
+    group: oinstall
+    mode: "0644"
+  notify: restart listener
+
+- name: Deploy tnsnames.ora
+  template:
+    src: "tnsnames.ora.j2"
+    dest: "{{ oracle_home }}/network/admin/tnsnames.ora"
+    owner: "{{ oracle_user }}"
+    group: oinstall
+    mode: "0644"
+
+- name: Start Listener
+  become_user: "{{ oracle_user }}"
+  shell: |
+    . /home/{{ oracle_user }}/.bash_profile
+    {{ oracle_home }}/bin/lsnrctl start
+  register: lsnr_start
+  failed_when: false
+  changed_when: "'The command completed successfully' in lsnr_start.stdout"
+
+- name: Verify Listener Status
+  become_user: "{{ oracle_user }}"
+  shell: |
+    . /home/{{ oracle_user }}/.bash_profile
+    {{ oracle_home }}/bin/lsnrctl status
+  register: lsnr_status
+  changed_when: false
+
+- name: Show Listener Status
+  debug:
+    msg: "{{ lsnr_status.stdout_lines }}"

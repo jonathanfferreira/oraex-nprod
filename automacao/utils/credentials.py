@@ -34,8 +34,10 @@ def get_credentials(
     elif env_password:
         password = env_password
     else:
-        password = cli_password if cli_password else "oracle"
-        if password == "oracle":
-            logging.warning("⚠️  USANDO SENHA DEFAULT (INSEGURA). Configure ORACLE_PASSWORD no ambiente.")
+        password = cli_password if cli_password else None
+        if not password:
+            raise ValueError(
+                "Senha não fornecida. Use --password ou configure ORACLE_PASSWORD."
+            )
 
     return DBCredentials(username, password, dsn)

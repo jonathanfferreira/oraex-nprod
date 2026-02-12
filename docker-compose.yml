@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. ORAEX Automation (The "Robot DBA")
+  # ---------------------------------------------------------------------------
+  automation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: oraex-automation
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ORAEX_HOME=/app
+    volumes:
+      - ./automacao:/app/automacao
+      - ./observability:/app/observability
+      - ./scripts:/app/scripts
+      - ./logs:/app/logs
+    networks:
+      - oraex-net
+    depends_on:
+      - oracle
+
+  # ---------------------------------------------------------------------------
+  # 2. Prometheus (Metrics)
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: oraex-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/prometheus/rules:/etc/prometheus/rules
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+    networks:
+      - oraex-net
+
+  # ---------------------------------------------------------------------------
+  # 3. Grafana (Visualization)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    container_name: oraex-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards
+    networks:
+      - oraex-net
+
+  # ---------------------------------------------------------------------------
+  # 4. Oracle Database (The Target)
+  # ---------------------------------------------------------------------------
+  oracle:
+    image: gvenzl/oracle-xe:21-faststart
+    container_name: oraex-oracle
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD:-oracle}
+    networks:
+      - oraex-net
+
+networks:
+  oraex-net:
+    driver: bridge

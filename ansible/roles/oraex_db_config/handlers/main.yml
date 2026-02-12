@@ -1,0 +1,7 @@
+---
+- name: restart listener
+  become_user: "{{ oracle_user }}"
+  shell: |
+    . /home/{{ oracle_user }}/.bash_profile
+    {{ oracle_home }}/bin/lsnrctl stop
+    {{ oracle_home }}/bin/lsnrctl start

@@ -1,0 +1,9 @@
+---
+- name: reload sysctl
+  command: sysctl -p
+
+- name: restart firewalld
+  systemd:
+    name: firewalld
+    state: restarted
+  ignore_errors: yes

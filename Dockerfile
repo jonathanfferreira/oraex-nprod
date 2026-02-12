@@ -3,7 +3,7 @@
 # Container com todos os scripts de automação Oracle
 # Pronto para deploy em qualquer ambiente com Python
 
-FROM python:3.9-slim
+FROM python:3.9-slim-bookworm
 
 LABEL maintainer="Jonathan Ferreira"
 LABEL project="ORAEX-NPROD"
@@ -34,7 +34,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar código da aplicação
 COPY automacao/ /app/automacao/
 COPY observability/ /app/observability/
-COPY webhook_receiver.py /app/
+COPY scripts/webhook_receiver.py /app/
 
 # Expor porta do webhook
 EXPOSE 5001
@@ -43,5 +43,8 @@ EXPOSE 5001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:5001/health')" || exit 1
 
-# Comando padrão: iniciar webhook receiver
-CMD ["python", "webhook_receiver.py"]
+# Variável de ambiente para localizar os módulos
+ENV ORAEX_HOME=/app
+
+# Comando padrão: iniciar webhook receiver com gunicorn
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5001", "--timeout", "300", "webhook_receiver:app"]

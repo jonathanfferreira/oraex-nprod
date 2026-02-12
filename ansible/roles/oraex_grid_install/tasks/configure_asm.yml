@@ -1,60 +1,97 @@
-﻿---
+---
 # =========================================================================
 # RESET ASM and Configure Disk Group
 # -------------------------------------------------------------------------
-# Tarefa opcional para garantir que o ASM esteja usando o disco correto (20GB).
+# Configura o ASM com o disco e diskgroup definidos nas variáveis da role.
 # =========================================================================
 
 - name: Stop ASM Instance (Force)
-  shell: /u01/app/19.0.0/grid/bin/crsctl stop has -f
+  shell: "{{ grid_home }}/bin/crsctl stop has -f"
   ignore_errors: yes
 
-    - name: Wipe ASM Disk Headers (loop0 and loop1)
-      # Run as root. Clean both candidates to avoid conflict.
-      shell: dd if=/dev/zero of={{ item }} bs=1M count=10 conv=notrunc
-      loop:
-        - /dev/loop0
-        - /dev/loop1
-        - /dev/loop2
-        - /dev/loop3
-        - /dev/loop4
-        - /dev/loop5
+- name: Wipe ASM Disk Headers
+  shell: dd if=/dev/zero of={{ item }} bs=1M count=10 conv=notrunc
+  loop:
+    - /dev/loop0
+    - /dev/loop1
+    - /dev/loop2
+    - /dev/loop3
+    - /dev/loop4
+    - /dev/loop5
+  ignore_errors: yes
 
-    - name: Start HAS (High Availability Services)
-      shell: /u01/app/19.0.0/grid/bin/crsctl start has
-      ignore_errors: yes
+- name: Start HAS (High Availability Services)
+  shell: "{{ grid_home }}/bin/crsctl start has"
+  register: has_start
+  retries: 3
+  delay: 10
+  until: has_start.rc == 0
+  ignore_errors: yes
 
-    - name: Configure ASM using 20GB Disk (/dev/loop1)
-      become_user: grid
-      shell: |
-        {{ grid_home }}/bin/asmca -silent -configureASM \
-        -sysAsmPassword '{{ sys_asm_pass }}' \
-        -asmsnmpPassword '{{ asm_snmp_pass }}' \
-        -diskString '/dev/loop1' \
-        -diskGroupName DATA \
-        -disk '/dev/loop1' \
-        -redundancy EXTERNAL \
-        -au_size 4
-      register: asmca_out
-      
-    - name: Show ASMCA Output
-      debug:
-        msg: "{{ asmca_out.stdout_lines }}"
+- name: Wait for HAS to be ready
+  shell: "{{ grid_home }}/bin/crsctl check has"
+  register: has_check
+  retries: 6
+  delay: 10
+  until: has_check.rc == 0
 
-    - name: Verify ASM Resource
-      become_user: grid
-      shell: "{{ grid_home }}/bin/crsctl stat res ora.asm -t"
-      register: final_check
+- name: Configure ASM Disk Group ({{ asm_dg_name }})
+  become_user: "{{ grid_user }}"
+  shell: |
+    {{ grid_home }}/bin/asmca -silent -configureASM \
+    -sysAsmPassword '{{ sys_asm_pass }}' \
+    -asmsnmpPassword '{{ asm_snmp_pass }}' \
+    -diskString '{{ asm_discovery_string }}' \
+    -diskGroupName {{ asm_dg_name }} \
+    -disk '{{ asm_disk }}' \
+    -redundancy {{ asm_dg_redundancy }} \
+    -au_size {{ asm_au_size }}
+  register: asmca_out
 
-    - name: Check Disk Group Free Space
-      become_user: grid
-      shell: |
-        . /home/grid/.bash_profile
-        {{ grid_home }}/bin/asmcmd lsdg
-      register: lsdg_out
+- name: Show ASMCA Output
+  debug:
+    msg: "{{ asmca_out.stdout_lines }}"
 
-    - name: Show Final Status
-      debug:
-        msg: 
-          - "{{ final_check.stdout_lines }}"
-          - "{{ lsdg_out.stdout_lines }}"
+- name: Create FRA Disk Group
+  become_user: "{{ grid_user }}"
+  shell: |
+    . /home/{{ grid_user }}/.bash_profile 2>/dev/null || true
+    {{ grid_home }}/bin/asmcmd mkdg \
+    "DATA /dev/loop2 {{ fra_dg_redundancy | default('EXTERNAL') }}"
+  register: fra_dg_out
+  ignore_errors: yes
+  when: fra_disk is defined
+
+- name: Create FRA Disk Group (via SQL when mkdg unavailable)
+  become_user: "{{ grid_user }}"
+  shell: |
+    . /home/{{ grid_user }}/.bash_profile 2>/dev/null || true
+    {{ grid_home }}/bin/sqlplus -S / as sysasm <<EOF
+    CREATE DISKGROUP {{ fra_dg_name | default('FRA') }}
+      EXTERNAL REDUNDANCY
+      DISK '{{ fra_disk | default("/dev/loop2") }}'
+      ATTRIBUTE 'AU_SIZE'='{{ asm_au_size }}M',
+                'COMPATIBLE.ASM'='19.0.0.0.0';
+    EXIT;
+    EOF
+  register: fra_sql_out
+  ignore_errors: yes
+  when: fra_disk is defined and (fra_dg_out is failed or fra_dg_out is skipped)
+
+- name: Verify ASM Resource
+  become_user: "{{ grid_user }}"
+  shell: "{{ grid_home }}/bin/crsctl stat res ora.asm -t"
+  register: final_check
+
+- name: Check Disk Group Free Space
+  become_user: "{{ grid_user }}"
+  shell: |
+    . /home/{{ grid_user }}/.bash_profile 2>/dev/null || true
+    {{ grid_home }}/bin/asmcmd lsdg
+  register: lsdg_out
+
+- name: Show Final Status
+  debug:
+    msg:
+      - "{{ final_check.stdout_lines }}"
+      - "{{ lsdg_out.stdout_lines }}"

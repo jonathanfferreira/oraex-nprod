@@ -1,0 +1,64 @@
+---
+# =========================================================================
+# 1. Preparação (Pre-Flight)
+# -------------------------------------------------------------------------
+# 'unzip' é trivial, mas essencial. Sem ele, não abrimos o instalador.
+# =========================================================================
+- name: Check if Database software is already installed
+  stat:
+    path: "{{ oracle_home }}/bin/oracle"
+  register: db_installed
+
+- name: Install Unzip (Prereqs)
+  dnf:
+    name: unzip
+    state: present
+
+    # Criamos o diretório onde o software vai morar.
+    # Importante: O dono DEVE ser o usuário 'oracle'.
+- name: Create Oracle Home Directory
+  file:
+    path: "{{ oracle_home }}"
+    state: directory
+    owner: "{{ oracle_user }}"
+    group: oinstall
+    mode: "0775"
+    recurse: yes
+
+- name: Unzip Oracle Database Binaries
+  unarchive:
+    src: "{{ db_zip }}"
+    dest: "{{ oracle_home }}"
+    remote_src: yes
+    owner: "{{ oracle_user }}"
+    group: oinstall
+    creates: "{{ oracle_home }}/runInstaller"
+
+- name: Generate Response File (Template)
+  template:
+    src: "db_install.j2"
+    dest: "{{ rsp_file_dest }}"
+    owner: "{{ oracle_user }}"
+    group: oinstall
+    mode: "0644"
+
+- name: Run Database Setup (Silent)
+  become: yes
+  become_user: "{{ oracle_user }}"
+  environment:
+    CV_ASSUME_DISTID: OEL7.6
+  shell: |
+    {{ oracle_home }}/runInstaller -silent -responseFile {{ rsp_file_dest }} -ignorePrereq -waitforcompletion
+  register: db_setup
+  failed_when: db_setup.rc not in [0, 6]
+  when: not db_installed.stat.exists
+
+- name: Run root.sh
+  shell: "{{ oracle_home }}/root.sh"
+  register: root_out
+  when: not db_installed.stat.exists
+
+- name: Show Root Execution Output
+  debug:
+    msg: "{{ root_out.stdout_lines }}"
+  when: root_out is defined and root_out.stdout_lines is defined

@@ -1,0 +1,159 @@
+---
+# =========================================================================
+# 1. Configuração do Sistema (System Configuration)
+# -------------------------------------------------------------------------
+# O Oracle Database depende de que o hostname seja resolvível (pingável)
+# e consistente. Se o hostname mudar, o banco para de funcionar.
+# =========================================================================
+- name: Set Hostname
+  hostname:
+    name: "{{ inventory_hostname }}"
+
+# O Clusterware exige que todos os nós se conheçam pelo nome.
+# Em produção, isso viria do DNS, mas no Lab hardcoded no /etc/hosts é mais seguro.
+- name: Configure /etc/hosts (Local Resolution)
+  blockinfile:
+    path: /etc/hosts
+    block: |
+      192.168.56.10 oracle-db-01.oraex.local oracle-db-01
+      192.168.56.11 rac-node1.oraex.local rac-node1
+      192.168.56.12 rac-node2.oraex.local rac-node2
+
+    # Firewall pode bloquear a comunicação entre o Listener (1521) e o Cliente.
+    # No Lab, desabilitamos para evitar complexidade. Em Prod, abriríamos portas.
+- name: Disable Firewall (Lab Simplification)
+  systemd:
+    name: firewalld
+    state: stopped
+    enabled: no
+  ignore_errors:
+    yes
+
+    # SELinux em 'Enforcing' bloqueia acessos a disco do ASM se não configurado.
+    # 'Permissive' apenas loga os erros sem bloquear. Padrão Oracle.
+- name: Set SELinux to Permissive
+  selinux:
+    policy: targeted
+    state: permissive
+
+    # =========================================================================
+    # 2. Instalação de Pacotes (Package Installation)
+    # -------------------------------------------------------------------------
+    # O pacote 'oracle-database-preinstall-19c' é magico. Ele faz 90% do trabalho chato:
+    # 1. Cria usuário oracle (se não existir).
+    # 2. Configura Kernel (shmmax, semaphores, file-max) no /etc/sysctl.conf.
+    # 3. Ajusta limites de segurança (ulimit) no /etc/security/limits.conf.
+    # =========================================================================
+- name: Install Oracle Preinstall RPM (The Heavy Lifter)
+  dnf:
+    name: oracle-database-preinstall-19c
+    state: present
+
+    # Ferramentas úteis para administração e debug.
+- name: Install Utils and Python
+  dnf:
+    name:
+      - python3 # Necessário para rodar scripts de automação
+      - python3-pip # Gerenciador de pacotes Python
+      - git # Controle de versão
+      - unzip # Descompactar os instaladores Oracle
+      - tar # Descompactar patches
+      - smartmontools # Diagnóstico de discos físicos
+    state: present
+
+    # =========================================================================
+    # 3. Usuários e Grupos (Users & Groups)
+    # -------------------------------------------------------------------------
+    # A Oracle usa grupos de SO para separar privilégios (Separation of Duties).
+    # - oinstall: Dono dos binários (instalação).
+    # - dba: Admin do Banco (SYSDBA).
+    # - asmadmin: Admin do Storage ASM (SYSASM).
+    # =========================================================================
+- name: Create Oracle Groups
+  group:
+    name: "{{ item.name }}"
+    gid: "{{ item.gid }}"
+    state: present
+  loop:
+    "{{ vars.oracle_groups }}"
+
+    # Usuário ORACLE: Dono do Software do Banco de Dados.
+- name: Create 'oracle' User
+  user:
+    name: oracle
+    uid: 54321
+    group: oinstall
+    groups: dba,oper,backupdba,dgdba,kmdba,asmdba,racdba
+    append: yes
+    password: "{{ 'oracle' | password_hash('sha512') }}" # Lab only
+
+    # Usuário GRID: Dono da Infraestrutura de Cluster e ASM.
+    # Separar Grid de Oracle é "Best Practice" para upgrades independentes.
+- name: Create 'grid' User
+  user:
+    name: grid
+    uid: 54322
+    group: oinstall
+    groups: asmadmin,asmdba,asmoper,dba,racdba
+    append: yes
+    password: "{{ 'grid' | password_hash('sha512') }}" # Lab only
+
+    # =========================================================================
+    # 4. Estrutura de Diretórios (Directory Structure/Permissions)
+    # -------------------------------------------------------------------------
+    # Padrão OFA (Oracle Flexible Architecture):
+    #
+    #
+    # NOTA DE PRODUÇÃO (LVM vs LAB):
+    # Aqui criamos diretórios normais no root filesystem para simplificar o Lab.
+    # Em um ambiente PROD (Getnet), '/u01' e '/u02' DEVEM ser Mount Points
+    # separados (LVs).
+    # [TODO NEXT SPRINT]: Automatizar criação de PV/VG/LV para /u01 e /u02 aqui.
+    #
+    # /u01/app/oracle -> ORACLE_BASE (Logs, Configs)
+    # /u01/app/oracle/product/19.0.0/dbhome_1 -> ORACLE_HOME (Binários)
+    # =========================================================================
+- name: Create Base Directories
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: oinstall
+    mode: "0775"
+  loop:
+    - { path: "/u01", owner: "root" }
+    - { path: "/u01/app", owner: "grid" } # Base common
+    - { path: "/u01/app/oracle", owner: "oracle" }
+    - { path: "/u01/app/grid", owner: "grid" }
+    - { path: "/u01/app/19.0.0/grid", owner: "grid" } # Grid Home
+    - { path: "/u01/app/oraInventory", owner: "grid" } # Inventário Central
+
+# Garante que ambos usuários possam escrever na base comum
+- name: Change ownership of /u01/app to ensure write access
+  file:
+    path: /u01/app
+    owner: grid
+    group: oinstall
+    mode: "0775"
+
+# =========================================================================
+# 5. Environment Profiles (bash_profile)
+# -------------------------------------------------------------------------
+# Configura variáveis de ambiente essenciais para oracle e grid.
+# Sem isso, comandos como sqlplus, lsnrctl, asmcmd não funcionam.
+# =========================================================================
+- name: Deploy .bash_profile for oracle user
+  template:
+    src: oracle_bash_profile.j2
+    dest: /home/oracle/.bash_profile
+    owner: oracle
+    group: oinstall
+    mode: "0644"
+
+- name: Deploy .bash_profile for grid user
+  template:
+    src: grid_bash_profile.j2
+    dest: /home/grid/.bash_profile
+    owner: grid
+    group: oinstall
+    mode: "0644"

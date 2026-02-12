@@ -1,0 +1,6 @@
+---
+- name: restart has
+  shell: |
+    {{ grid_home }}/bin/crsctl stop has -f
+    sleep 5
+    {{ grid_home }}/bin/crsctl start has

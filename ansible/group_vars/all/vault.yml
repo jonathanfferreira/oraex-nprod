@@ -1,0 +1,23 @@
+# =============================================================================
+# ORAEX Vault Variables (Senhas e Credenciais)
+# -----------------------------------------------------------------------------
+# Este arquivo DEVE ser encriptado com ansible-vault antes de commitar:
+#   ansible-vault encrypt ansible/group_vars/all/vault.yml
+#
+# Para editar:
+#   ansible-vault edit ansible/group_vars/all/vault.yml
+#
+# Para rodar o playbook:
+#   ansible-playbook site.yml --ask-vault-pass
+#   ansible-playbook site.yml --vault-password-file ~/.vault_pass
+# =============================================================================
+
+# Oracle Database Passwords
+vault_sys_pass: "Oracle123"
+vault_system_pass: "Oracle123"
+vault_dbsnmp_pass: "Oracle123"
+vault_pdb_admin_pass: "Oracle123"
+
+# Grid Infrastructure / ASM Passwords
+vault_sys_asm_pass: "Oracle123"
+vault_asm_snmp_pass: "Oracle123"

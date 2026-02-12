@@ -76,12 +76,10 @@ class ConnectionConfig:
         password = os.environ.get(password_env)
         
         if not password:
-            logging.warning(
-                "⚠️  ORACLE_PASSWORD não definida. "
-                "Configure a variável de ambiente ou use argumentos CLI."
+            raise ValueError(
+                "ORACLE_PASSWORD não definida. "
+                "Configure a variável de ambiente ou use argumentos CLI: --password"
             )
-            # Para compatibilidade, usar default inseguro com aviso
-            password = "oracle"
         
         return cls(dsn=dsn, username=username, password=password)
     
@@ -98,12 +96,11 @@ class ConnectionConfig:
         """
         dsn = cli_dsn or os.environ.get("ORACLE_DSN", "localhost:1521/orcl")
         username = cli_user or os.environ.get("ORACLE_USER", "system")
-        password = cli_password or os.environ.get("ORACLE_PASSWORD", "oracle")
-        
-        if password == "oracle":
-            logging.warning(
-                "⚠️  Usando senha default (insegura). "
-                "Configure ORACLE_PASSWORD no ambiente."
+        password = cli_password or os.environ.get("ORACLE_PASSWORD")
+
+        if not password:
+            raise ValueError(
+                "Senha não fornecida. Use --password ou configure ORACLE_PASSWORD."
             )
         
         return cls(dsn=dsn, username=username, password=password)

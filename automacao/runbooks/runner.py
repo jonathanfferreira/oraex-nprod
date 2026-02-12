@@ -19,10 +19,10 @@ from typing import List, Dict, Optional
 # Setup path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-# Configurar Oracle Client temporariamente (Hardcoded para testes)
-oracle_client = r"D:\PESSOAL\ESTUDOS\Oracle\instantclient-basic-windows.x64-19.29.0.0.0dbru\instantclient_19_29"
-if oracle_client not in os.environ["PATH"]:
-    os.environ["PATH"] = oracle_client + ";" + os.environ["PATH"]
+# Configurar Oracle Client via variável de ambiente (opcional)
+oracle_client = os.environ.get("ORACLE_CLIENT_PATH", "")
+if oracle_client and oracle_client not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = oracle_client + os.pathsep + os.environ.get("PATH", "")
 
 try:
     from automacao.utils.connection import ConnectionConfig

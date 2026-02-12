@@ -18,17 +18,17 @@ oracle.install.asm.OSDBA=asmdba
 oracle.install.asm.OSOPER=asmoper
 oracle.install.asm.OSASM=asmadmin
 
-# Passwords (Lab Default)
-oracle.install.asm.SYSASMPassword=W3lc0m3_123#
-oracle.install.asm.monitorPassword=W3lc0m3_123#
+# Passwords
+oracle.install.asm.SYSASMPassword={{ sys_asm_pass }}
+oracle.install.asm.monitorPassword={{ asm_snmp_pass }}
 
 # ASM Disk Group (DATA) using Loopback (Clean Install) or Real Disks
-oracle.install.asm.diskGroup.name=DATA
-oracle.install.asm.diskGroup.redundancy=EXTERNAL
-oracle.install.asm.diskGroup.AUSize=4
+oracle.install.asm.diskGroup.name={{ asm_dg_name }}
+oracle.install.asm.diskGroup.redundancy={{ asm_dg_redundancy }}
+oracle.install.asm.diskGroup.AUSize={{ asm_au_size }}
 # Discovery String for Lab (Loopback) or Prod (Generic)
-oracle.install.asm.diskGroup.disks=/dev/loop0
-oracle.install.asm.diskGroup.diskDiscoveryString=/dev/loop*
+oracle.install.asm.diskGroup.disks={{ asm_disk }}
+oracle.install.asm.diskGroup.diskDiscoveryString={{ asm_discovery_string }}
 
 oracle.install.asm.configureAFD=false
 oracle.install.config.managementOption=NONE

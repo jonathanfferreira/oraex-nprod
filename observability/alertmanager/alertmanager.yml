@@ -1,12 +1,13 @@
 # AlertManager Configuration for ORAEX
 # -------------------------------------
+# Credenciais via variáveis de ambiente no docker-compose.yml
 
 global:
-  smtp_smarthost: 'smtp.example.com:587'
-  smtp_from: 'alertmanager@oraex.local'
-  smtp_auth_username: 'alertmanager@oraex.local'
-  smtp_auth_password: 'changeme'
-  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  smtp_smarthost: '{{ SMTP_SMARTHOST | default "smtp.example.com:587" }}'
+  smtp_from: '{{ SMTP_FROM | default "alertmanager@oraex.local" }}'
+  smtp_auth_username: '{{ SMTP_AUTH_USERNAME | default "alertmanager@oraex.local" }}'
+  smtp_auth_password: '{{ SMTP_AUTH_PASSWORD | default "" }}'
+  slack_api_url: '{{ SLACK_API_URL | default "" }}'
 
 route:
   receiver: 'default-receiver'
@@ -14,50 +15,75 @@ route:
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 4h
-  
+
   routes:
-    # Self-Healing alerts
+    # Critical alerts -> notification imediata
+    - match:
+        severity: 'critical'
+      receiver: 'critical-receiver'
+      group_wait: 0s
+      group_interval: 1m
+      repeat_interval: 1h
+      continue: true
+
+    # Self-Healing alerts (tablespace, archive)
     - match:
         runbook: 'tablespace'
       receiver: 'self-healing-receiver'
-      continue: true
+      continue: false
     - match:
         runbook: 'archive'
       receiver: 'self-healing-receiver'
-      continue: true
+      continue: false
+
+    # Warning alerts -> channel de alertas
+    - match:
+        severity: 'warning'
+      receiver: 'warning-receiver'
 
 receivers:
   - name: 'default-receiver'
     webhook_configs:
-      - url: 'http://localhost:5001/alert'
+      - url: 'http://oraex-automation:5001/alert'
         send_resolved: true
 
   - name: 'self-healing-receiver'
     webhook_configs:
-      - url: 'http://localhost:5001/alert'
+      - url: 'http://oraex-automation:5001/alert'
         send_resolved: false
 
   - name: 'critical-receiver'
     slack_configs:
       - channel: '#dba-alerts-critical'
         send_resolved: true
-        title: '🚨 {{ .CommonAnnotations.summary }}'
+        title: '{{ .CommonAnnotations.summary }}'
         text: '{{ .CommonAnnotations.description }}'
-    # email_configs:
-    #   - to: 'dba-team@getnet.com.br'
-    #     send_resolved: true
 
   - name: 'warning-receiver'
     slack_configs:
       - channel: '#dba-alerts'
         send_resolved: true
-        title: '⚠️ {{ .CommonAnnotations.summary }}'
+        title: '{{ .CommonAnnotations.summary }}'
         text: '{{ .CommonAnnotations.description }}'
 
 inhibit_rules:
-  # If critical is firing, suppress warning for same alertname
+  # Tablespace Critical suppresses Tablespace Warning (same tablespace)
   - source_match:
-      severity: 'critical'
+      alertname: 'TablespaceUsageCritical'
     target_match:
-      severity: 'warning'
-    equal: ['alertname', 'database']
+      alertname: 'TablespaceUsageWarning'
+    equal: ['database', 'tablespace']
+
+  # FRA Critical suppresses FRA Warning
+  - source_match:
+      alertname: 'FRAUsageCritical'
+    target_match:
+      alertname: 'FRAUsageWarning'
+    equal: ['database']
+
+  # Database Down suppresses all other alerts for same database
+  - source_match:
+      alertname: 'OracleDatabaseDown'
+    target_match_re:
+      alertname: '.+'
+    equal: ['database']

@@ -1,0 +1,14 @@
+---
+oracle_user: oracle
+oracle_home: /u01/app/oracle/product/19.0.0/dbhome_1
+db_name: ORCL
+pdb_name: ORCLPDB
+sys_pass: "{{ vault_sys_pass | default('Oracle123') }}"
+system_pass: "{{ vault_system_pass | default('Oracle123') }}"
+dbsnmp_pass: "{{ vault_dbsnmp_pass | default('Oracle123') }}"
+pdb_admin_pass: "{{ vault_pdb_admin_pass | default('Oracle123') }}"
+asm_snmp_pass: "{{ vault_asm_snmp_pass | default('Oracle123') }}"
+asm_dg_name: DATA
+fra_dg_name: FRA
+db_total_memory: 2048
+rsp_file_dest: /tmp/db_create.rsp

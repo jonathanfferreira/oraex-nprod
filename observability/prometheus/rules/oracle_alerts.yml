@@ -2,8 +2,8 @@
 # -------------------------
 
 groups:
-  - name: oracle-alerts
-    interval: 1m
+  - name: oracle-availability
+    interval: 30s
     rules:
       # Database Down
       - alert: OracleDatabaseDown
@@ -12,9 +12,21 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Oracle Database {{ $labels.dsn }} is down"
+          summary: "Oracle Database {{ $labels.database }} is down"
           description: "Database has been unreachable for more than 2 minutes."
 
+      # Instance Restart (uptime < 5 min)
+      - alert: InstanceRestarted
+        expr: oracle_instance_uptime_minutes < 5
+        labels:
+          severity: info
+        annotations:
+          summary: "Oracle instance was recently restarted"
+          description: "Instance {{ $labels.instance }} uptime is only {{ $value }} minutes."
+
+  - name: oracle-storage
+    interval: 1m
+    rules:
       # Tablespace > 85%
       - alert: TablespaceUsageWarning
         expr: oracle_tablespace_used_percent > 85
@@ -34,7 +46,7 @@ groups:
           severity: critical
           runbook: tablespace
         annotations:
-          summary: "Tablespace {{ $labels.tablespace }} usage above 95%"
+          summary: "Tablespace {{ $labels.tablespace }} CRITICAL - above 95%"
           description: "Tablespace {{ $labels.tablespace }} is at {{ $value }}% - IMMEDIATE ACTION REQUIRED."
 
       # FRA > 80%
@@ -56,10 +68,23 @@ groups:
           severity: critical
           runbook: archive
         annotations:
-          summary: "Flash Recovery Area usage above 95%"
+          summary: "Flash Recovery Area CRITICAL - above 95%"
           description: "FRA is at {{ $value }}% - database may stop archiving."
 
-      # Many Active Sessions
+      # ASM Diskgroup > 85%
+      - alert: ASMDiskgroupUsageHigh
+        expr: oracle_asm_diskgroup_used_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ASM Diskgroup {{ $labels.diskgroup }} above 85%"
+          description: "ASM Diskgroup {{ $labels.diskgroup }} is at {{ $value }}% usage."
+
+  - name: oracle-performance
+    interval: 1m
+    rules:
+      # High Session Count
       - alert: HighSessionCount
         expr: oracle_sessions_total > 200
         for: 5m
@@ -69,11 +94,69 @@ groups:
           summary: "High number of active sessions"
           description: "{{ $value }} active sessions detected."
 
-      # Instance Restart (uptime < 5 min)
-      - alert: InstanceRestarted
-        expr: oracle_instance_uptime_minutes < 5
+      # Blocking Sessions
+      - alert: BlockingSessionsDetected
+        expr: oracle_blocking_sessions_count > 0
+        for: 5m
         labels:
-          severity: info
+          severity: warning
         annotations:
-          summary: "Oracle instance was recently restarted"
-          description: "Instance {{ $labels.instance }} uptime is only {{ $value }} minutes."
+          summary: "Blocking sessions detected"
+          description: "{{ $value }} blocking session(s) detected. Check for lock contention."
+
+      # Long Running Blocking Sessions (> 30 min)
+      - alert: LongRunningBlockingSessions
+        expr: oracle_blocking_sessions_max_wait_seconds > 1800
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Long-running blocking session detected"
+          description: "A blocking session has been waiting for {{ $value }} seconds."
+
+      # Archiver Stuck
+      - alert: ArchiverStuck
+        expr: oracle_archiver_status == 0
+        for: 2m
+        labels:
+          severity: critical
+          runbook: archive
+        annotations:
+          summary: "Oracle archiver is stuck"
+          description: "Archiver process is not running. Archive logs may fill up disk."
+
+  - name: oracle-memory
+    interval: 1m
+    rules:
+      # SGA Free Memory Low
+      - alert: SGAMemoryLow
+        expr: oracle_sga_free_mb < 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SGA free memory below 100MB"
+          description: "SGA free memory is at {{ $value }}MB. Consider increasing SGA_TARGET."
+
+      # PGA Usage High
+      - alert: PGAUsageHigh
+        expr: oracle_pga_used_mb / oracle_pga_target_mb > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PGA usage above 90% of target"
+          description: "PGA consumption is high. Possible sort/hash operations spilling to disk."
+
+  - name: oracle-redo
+    interval: 1m
+    rules:
+      # Redo Log Switch Frequency (> 6 switches per hour)
+      - alert: HighRedoLogSwitchRate
+        expr: rate(oracle_redo_log_switches_total[1h]) > 6
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High redo log switch rate"
+          description: "{{ $value }} redo log switches per hour. Consider increasing redo log size."

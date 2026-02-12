@@ -99,12 +99,44 @@ class OracleCollector:
             WHERE name IN ('Total SGA Size', 'Free SGA Memory Available')
         """,
         "fra_usage": """
-            SELECT 
+            SELECT
                 name,
                 ROUND(space_limit / 1024 / 1024, 2) as limit_mb,
                 ROUND(space_used / 1024 / 1024, 2) as used_mb,
                 ROUND(space_used / space_limit * 100, 2) as pct_used
             FROM v$recovery_file_dest
+        """,
+        "blocking_sessions": """
+            SELECT
+                COUNT(*) as blocking_count,
+                NVL(MAX(seconds_in_wait), 0) as max_wait_seconds
+            FROM v$session
+            WHERE blocking_session IS NOT NULL
+        """,
+        "asm_diskgroups": """
+            SELECT
+                name,
+                ROUND(total_mb / 1024, 2) as total_gb,
+                ROUND(free_mb / 1024, 2) as free_gb,
+                ROUND((total_mb - free_mb) / total_mb * 100, 2) as pct_used
+            FROM v$asm_diskgroup
+        """,
+        "pga_usage": """
+            SELECT
+                ROUND(value / 1024 / 1024, 2) as mb
+            FROM v$pgastat
+            WHERE name = 'total PGA allocated'
+        """,
+        "redo_switches": """
+            SELECT COUNT(*) as switches
+            FROM v$log_history
+            WHERE first_time > SYSDATE - 1/24
+        """,
+        "archiver_status": """
+            SELECT
+                CASE WHEN status = 'STARTED' THEN 1 ELSE 0 END as is_running
+            FROM v$instance
+            WHERE archiver != 'STOPPED'
         """
     }
     
@@ -113,18 +145,24 @@ class OracleCollector:
         self.connection: Optional[cx_Oracle.Connection] = None
         self.logger = logging.getLogger("OracleCollector")
     
-    def connect(self) -> bool:
-        """Estabelece conexão com o banco."""
-        try:
-            self.connection = cx_Oracle.connect(
-                user=self.config.username,
-                password=self.config.password,
-                dsn=self.config.dsn
-            )
-            return True
-        except Exception as e:
-            self.logger.error(f"Erro ao conectar: {e}")
-            return False
+    def connect(self, retries: int = 3, delay: int = 5) -> bool:
+        """Estabelece conexão com o banco, com retry."""
+        for attempt in range(1, retries + 1):
+            try:
+                self.connection = cx_Oracle.connect(
+                    user=self.config.username,
+                    password=self.config.password,
+                    dsn=self.config.dsn
+                )
+                self.logger.info(f"Conectado a {self.config.dsn}")
+                return True
+            except Exception as e:
+                self.logger.warning(f"Tentativa {attempt}/{retries} falhou: {e}")
+                if attempt < retries:
+                    time.sleep(delay)
+                self.connection = None
+        self.logger.error(f"Falha ao conectar apos {retries} tentativas")
+        return False
     
     def collect(self) -> List[Metric]:
         """Coleta todas as métricas."""
@@ -151,10 +189,13 @@ class OracleCollector:
         # Coletar cada tipo de métrica
         metrics.extend(self._collect_tablespace())
         metrics.extend(self._collect_sessions())
+        metrics.extend(self._collect_blocking_sessions())
         metrics.extend(self._collect_instance())
         metrics.extend(self._collect_waits())
         metrics.extend(self._collect_sga())
         metrics.extend(self._collect_fra())
+        metrics.extend(self._collect_asm())
+        metrics.extend(self._collect_redo())
         
         return metrics
     
@@ -259,14 +300,70 @@ class OracleCollector:
     def _collect_sga(self) -> List[Metric]:
         """Coleta métricas de SGA."""
         metrics = []
+        name_map = {
+            "Total SGA Size": "oracle_sga_total_mb",
+            "Free SGA Memory Available": "oracle_sga_free_mb",
+        }
         for row in self._execute_query(self.QUERIES["sga_usage"]):
             name, size_mb = row
-            metric_name = "oracle_sga_" + name.lower().replace(" ", "_") + "_mb"
+            metric_name = name_map.get(name, "oracle_sga_" + name.lower().replace(" ", "_") + "_mb")
             metrics.append(Metric(
                 name=metric_name,
                 value=size_mb,
                 labels={},
                 help_text=f"SGA {name} in MB"
+            ))
+        return metrics
+
+    def _collect_blocking_sessions(self) -> List[Metric]:
+        """Coleta métricas de sessões bloqueantes."""
+        metrics = []
+        for row in self._execute_query(self.QUERIES["blocking_sessions"]):
+            count, max_wait = row
+            metrics.append(Metric(
+                name="oracle_blocking_sessions_count",
+                value=count,
+                labels={},
+                help_text="Number of blocking sessions"
+            ))
+            metrics.append(Metric(
+                name="oracle_blocking_sessions_max_wait_seconds",
+                value=max_wait,
+                labels={},
+                help_text="Max wait time of blocked sessions in seconds"
+            ))
+        return metrics
+
+    def _collect_asm(self) -> List[Metric]:
+        """Coleta métricas de ASM diskgroups."""
+        metrics = []
+        for row in self._execute_query(self.QUERIES["asm_diskgroups"]):
+            name, total_gb, free_gb, pct_used = row
+            metrics.append(Metric(
+                name="oracle_asm_diskgroup_free_gb",
+                value=free_gb,
+                labels={"diskgroup": name},
+                help_text="ASM diskgroup free space in GB"
+            ))
+            metrics.append(Metric(
+                name="oracle_asm_diskgroup_used_percent",
+                value=pct_used,
+                labels={"diskgroup": name},
+                help_text="ASM diskgroup usage percentage"
+            ))
+        return metrics
+
+    def _collect_redo(self) -> List[Metric]:
+        """Coleta métricas de redo log switches."""
+        metrics = []
+        for row in self._execute_query(self.QUERIES["redo_switches"]):
+            switches = row[0]
+            metrics.append(Metric(
+                name="oracle_redo_log_switches_total",
+                value=switches,
+                labels={},
+                metric_type="counter",
+                help_text="Redo log switches in last hour"
             ))
         return metrics
     

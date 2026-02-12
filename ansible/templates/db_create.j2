@@ -10,26 +10,24 @@
 responseFileVersion=/oracle/assistants/rspfmt_dbca_response_schema_v19.0.0
 
 # Identificação do Banco (Global Database Name e SID)
-gdbName=oraex.local
-sid=oraex
+gdbName={{ db_name }}.local
+sid={{ db_name | lower }}
 
 # Tipo de Configuração: SI (Single Instance) ou RAC
 databaseConfigType=SI
 templateName=General_Purpose.dbc
 
 # Senhas Administrativas (SYS, SYSTEM)
-# Em produção, usar Vaults. No Lab, hardcoded.
-sysPassword={{ 'W3lc0m3_123#' }}
-systemPassword={{ 'W3lc0m3_123#' }}
+sysPassword={{ sys_pass }}
+systemPassword={{ system_pass }}
 emConfiguration=NONE
-dbsnmpPassword={{ 'W3lc0m3_123#' }}
+dbsnmpPassword={{ dbsnmp_pass }}
 
 # Configuração de Storage (ASM)
-# O banco vai morar dentro do Diskgroup +DATA (criado na Fase Grid)
 storageType=ASM
-diskGroupName=+DATA
-asmsnmpPassword={{ 'W3lc0m3_123#' }}
-recoveryGroupName=+DATA # Fast Recovery Area (FRA)
+diskGroupName=+{{ asm_dg_name | default('DATA') }}
+asmsnmpPassword={{ asm_snmp_pass }}
+recoveryGroupName=+{{ fra_dg_name | default('FRA') }}
 
 # Configuração de Character Set (Padrão Mundial Moderno: UTF8)
 characterSet=AL32UTF8
@@ -39,15 +37,13 @@ listeners=LISTENER
 
 # Configuração de Memória (SGA + PGA)
 # 40% da RAM da VM, Gerenciamento Manual (ASMM) vs Automático (AMM)
-# 'automaticMemoryManagement=false' é preferido para servidores grandes.
 memoryPercentage=40
 databaseType=MULTIPURPOSE
 automaticMemoryManagement=false
-totalMemory=2048
+totalMemory={{ db_total_memory | default('2048') }}
 
 # Configuração Multitenant (CDB/PDB)
-# O Oracle 19c incentiva a arquitetura de Containers.
 createAsContainerDatabase=true
 numberOfPDBs=1
-pdbName=pdb1
-pdbAdminPassword={{ 'W3lc0m3_123#' }}
+pdbName={{ pdb_name }}
+pdbAdminPassword={{ pdb_admin_pass }}

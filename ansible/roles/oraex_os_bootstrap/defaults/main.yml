@@ -1,0 +1,16 @@
+---
+# Definições Padrão de Grupos e Usuários
+oracle_groups:
+  - { name: "oinstall", gid: 54321 }
+  - { name: "dba", gid: 54322 }
+  - { name: "oper", gid: 54323 }
+  - { name: "backupdba", gid: 54324 }
+  - { name: "dgdba", gid: 54325 }
+  - { name: "kmdba", gid: 54326 }
+  - { name: "racdba", gid: 54327 }
+  - { name: "asmdba", gid: 54328 }
+  - { name: "asmoper", gid: 54329 }
+  - { name: "asmadmin", gid: 54330 }
+
+oracle_user: oracle
+grid_user: grid
